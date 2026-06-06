@@ -1,0 +1,28 @@
+# Ambiente virtual Python
+venv/
+.env
+*.pyc
+__pycache__/
+
+# Logs e cache
+*.log
+*.tmp
+*.cache/
+*.sqlite3
+
+# Arquivos de áudio/vídeo temporários (Whisper + FFmpeg)
+*.wav
+*.mp3
+*.mp4
+*.m4a
+*.ogg
+*.flac
+
+# Ollama (modelos locais e cache)
+.ollama/
+ollama_models/
+ollama_cache/
+
+# Configurações do sistema
+.DS_Store
+Thumbs.db
