@@ -7,15 +7,16 @@ type Props = {
 export default function RecorderWelcome({ onOpenInTab }: Props) {
   return (
     <>
-      <div className="header" style={{ marginBottom: "20px" }}>
+      <div className="header header--welcome" style={{ marginBottom: "10px" }}>
         <h1>Anota aí</h1>
         <p>Para gravar com segurança e garantir acesso total ao microfone, abra o gravador em uma nova aba.</p>
       </div>
 
       <button
         onClick={onOpenInTab}
-        className="btn-send"
+        className="btn-open-recorder"
         style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)" }}>
+
         <svg
           width="16"
           height="16"

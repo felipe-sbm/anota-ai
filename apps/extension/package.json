@@ -10,7 +10,8 @@
     "package": "plasmo package"
   },
   "dependencies": {
-    "plasmo": "0.90.5",
+    "lucide-react": "^0.407.0",
+    "plasmo": "^0.90.5",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
@@ -28,8 +29,9 @@
       "https://*/*"
     ],
     "permissions": [
-      "microphone"
+      "microphone",
+      "storage",
+      "tabs"
     ]
   }
 }
-
