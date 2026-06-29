@@ -2,6 +2,94 @@
   color-scheme: light;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  overflow: hidden;
+  background: #f5f3ff;
+}
+
+.app-layout {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.popup-shell {
+  width: 480px;
+  min-width: 480px;
+  min-height: 340px;
+  max-width: 480px;
+  max-height: 340px;
+  overflow: hidden;
+}
+
+.recorder-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 340px;
+  padding: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top left, rgba(93, 64, 212, 0.2), transparent 36%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.05), transparent 30%),
+    linear-gradient(180deg, #faf5ff 0%, #f8fafc 100%);
+}
+
+.recorder-welcome-shell {
+  width: 20rem;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.recorder-welcome-body {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  padding: 18px;
+}
+
+.recorder-welcome-icon {
+  display: block;
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+}
+
+.recorder-welcome-title {
+  font-size: 20px;
+  font-weight: 850;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.5px;
+  text-align: left;
+}
+
+.recorder-welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.recorder-welcome-desc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0;
+  text-align: left;
+  max-width: 28ch;
+}
+
 .recorder-container{
   padding:16px;
   background:#ffffff;
@@ -138,32 +226,28 @@
 }
 
 .btn-open-recorder{
-  background:#111827;
+  background: #5D3FD3;
   color:#ffffff;
-  width:auto;
-  padding:8px 14px;
-  border-radius:10px;
-  border:1px solid rgba(0,0,0,0.06);
-  font-weight:800;
-  font-size:13px;
+  width:12rem;
+  margin: 16px auto;
+  padding:14px 20px;
+  border-radius:8px;
+  border:none;
+  font-weight:500;
+  font-size:14px;
   cursor:pointer;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:8px;
-  margin:0 auto;
   line-height:1;
-  box-shadow: 0 8px 20px rgba(124,58,237,0.15);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  transition: transform 0.12s ease;
+  font-family: inherit;
+  margin-top: 2px;
 }
 
 .btn-open-recorder:hover{
-  filter: brightness(1.02);
-  box-shadow: 0 10px 24px rgba(124,58,237,0.22);
-}
-
-.btn-open-recorder:active{
-  transform: translateY(1px);
+  filter: brightness(1.03);
 }
 
 
@@ -382,7 +466,7 @@
 
 .dashboard-task-count {
   font-size: 11px;
-  color: #8b5cf6;
+  color: #5D3FD3;
   font-weight: 600;
   display: inline-block;
   margin-top: 4px;
@@ -485,7 +569,7 @@
 .detail-loading {
   text-align: center;
   padding: 24px;
-  color: #8b5cf6;
+  color: #5D3FD3;
   font-weight: 600;
   font-size: 13px;
   animation: pulse 1.5s ease-in-out infinite;
@@ -563,7 +647,7 @@
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  background: #8b5cf6;
+  background: #5D3FD3;
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -631,7 +715,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid #e5e7eb;
-  border-top-color: #8b5cf6;
+  border-top-color: #5D3FD3;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px auto;
@@ -676,13 +760,14 @@
 .btn-github-login {
   display: inline-flex;
   align-items: center;
+  justify-items: center;
   gap: 10px;
   padding: 12px 24px;
   border: none;
   border-radius: 10px;
   background: #111827;
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 500;
   font-size: 15px;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -696,4 +781,3 @@
 .btn-github-login:active {
   background: #111827;
 }
-

@@ -1,24 +1,21 @@
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 
-import "./styles/recorder.css"
-import "./styles/dashboard.css"
-const Logo = new URL("./assets/logo.png", import.meta.url).toString()
+import "../styles/recorder.css"
+import "../styles/dashboard.css"
+import "../styles/dashboard-page.css"
 
-import RecorderControls from "./components/RecorderControls"
-import RecorderStatus from "./components/RecorderStatus"
-import RecorderVisualizer from "./components/RecorderVisualizer"
-import RecorderWelcome from "./components/RecorderWelcome"
-import RecordingDetail from "./components/RecordingDetail"
-import Sidebar from "./components/Sidebar"
-import HistoryDashboard from "./components/HistoryDashboard"
-
-import { AUTH_TOKEN_KEY, API_BASE, AUTH_LOGIN_URL, AUTH_SUCCESS_URL_PREFIX } from "./config"
+import Header from "../components/Header"
+import HistoryDashboard from "../components/HistoryDashboard"
+import RecorderControls from "../components/RecorderControls"
+import RecorderStatus from "../components/RecorderStatus"
+import RecorderVisualizer from "../components/RecorderVisualizer"
+import RecordingDetail from "../components/RecordingDetail"
+import Sidebar from "../components/Sidebar"
+import { API_BASE, AUTH_LOGIN_URL, AUTH_SUCCESS_URL_PREFIX, AUTH_TOKEN_KEY } from "../config"
 import { GithubIcon } from "lucide-react";
 
 type Status = "idle" | "recording" | "recorded" | "uploading" | "success" | "error"
-
 type AuthState = "unknown" | "authenticated" | "unauthenticated"
-
 type Tab = "recorder" | "history"
 
 type Recording = {
@@ -36,12 +33,13 @@ type Recording = {
   error_message: string | null
 }
 
-function IndexPopup() {
+const Logo = new URL("../assets/logo.png", import.meta.url).toString()
+
+export default function DashboardPage() {
   const [authState, setAuthState] = useState<AuthState>("unknown")
-  const [isInsideTab, setIsInsideTab] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
-  const [audioUrl, setAudioUrl] = useState<string>("")
+  const [audioUrl, setAudioUrl] = useState("")
   const [recordingTime, setRecordingTime] = useState(0)
   const [status, setStatus] = useState<Status>("idle")
   const [errorMessage, setErrorMessage] = useState("")
@@ -58,11 +56,38 @@ function IndexPopup() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    const isTab =
-      window.location.hash === "#tab" ||
-      window.location.pathname.endsWith("/tabs/dashboard.html")
-    setIsInsideTab(isTab)
+    const chromeAny = (window as any).chrome
+    const loadToken = async () => {
+      try {
+        const data = await chromeAny?.storage?.local?.get(AUTH_TOKEN_KEY)
+        const token = data?.[AUTH_TOKEN_KEY] as string | undefined
+
+        if (!token) {
+          setAuthState("unauthenticated")
+          return
+        }
+
+        setAuthState("authenticated")
+        hydrateUserFromToken(token)
+      } catch {
+        setAuthState("unauthenticated")
+      }
+    }
+
+    loadToken()
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+    }
   }, [])
+
+  const hydrateUserFromToken = (token: string) => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      if (payload.github_login) setGithubLogin(payload.github_login)
+    } catch {}
+  }
 
   const loginWithGithub = () => {
     const chromeAny = (window as any).chrome
@@ -81,6 +106,7 @@ function IndexPopup() {
           const token = url.searchParams.get("token")
           if (token) {
             chromeAny.storage.local.set({ [AUTH_TOKEN_KEY]: token }, () => {
+              hydrateUserFromToken(token)
               setAuthState("authenticated")
               chromeAny.tabs.remove(tabId)
             })
@@ -100,43 +126,31 @@ function IndexPopup() {
     })
   }
 
-  const openInTab = () => {
-    const chromeAny = (window as any).chrome
-    if (chromeAny && chromeAny.tabs && chromeAny.runtime) {
-      chromeAny.tabs.create({
-        url: chromeAny.runtime.getURL("tabs/dashboard.html")
-      })
-      window.close()
-    } else {
-      window.open(new URL("/tabs/dashboard.html", window.location.href).toString(), "_blank")
-    }
-  }
-
   const startRecording = async () => {
     try {
       audioChunksRef.current = []
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-
       const defaultMimeType = "audio/webm"
       const fallbackMimeType = "audio/ogg"
-      const options = { mimeType: MediaRecorder.isTypeSupported(defaultMimeType) ? defaultMimeType : fallbackMimeType }
+      const options = {
+        mimeType: MediaRecorder.isTypeSupported(defaultMimeType) ? defaultMimeType : fallbackMimeType
+      }
 
       const mediaRecorder = new MediaRecorder(stream, options)
       mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data)
       }
 
       mediaRecorder.onstop = () => {
         const recordedBlob = new Blob(audioChunksRef.current, { type: options.mimeType })
         setAudioBlob(recordedBlob)
-        const url = URL.createObjectURL(recordedBlob)
-        setAudioUrl(url)
+        setAudioUrl((previousUrl) => {
+          if (previousUrl) URL.revokeObjectURL(previousUrl)
+          return URL.createObjectURL(recordedBlob)
+        })
         setStatus("recorded")
-
         stream.getTracks().forEach((track) => track.stop())
       }
 
@@ -144,6 +158,7 @@ function IndexPopup() {
       setIsRecording(true)
       setStatus("recording")
       setRecordingTime(0)
+      setErrorMessage("")
 
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1)
@@ -159,9 +174,7 @@ function IndexPopup() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
+      if (timerRef.current) clearInterval(timerRef.current)
     }
   }
 
@@ -178,7 +191,10 @@ function IndexPopup() {
 
   const resetRecorder = () => {
     setAudioBlob(null)
-    setAudioUrl("")
+    setAudioUrl((previousUrl) => {
+      if (previousUrl) URL.revokeObjectURL(previousUrl)
+      return ""
+    })
     setRecordingTime(0)
     setStatus("idle")
     setIsPlaying(false)
@@ -187,16 +203,10 @@ function IndexPopup() {
 
   const uploadAudio = async () => {
     if (!audioBlob) return
-    if (authState !== "authenticated") {
-      loginWithGithub()
-      return
-    }
-
     setStatus("uploading")
 
     const formData = new FormData()
-    const filename = `gravacao_${Date.now()}.webm`
-    formData.append("file", audioBlob, filename)
+    formData.append("file", audioBlob, `gravacao_${Date.now()}.webm`)
 
     try {
       const chromeAny = (window as any).chrome
@@ -205,17 +215,14 @@ function IndexPopup() {
 
       if (!token) {
         setStatus("error")
-        setErrorMessage("Sessão expirada. Faça login com GitHub para gravar/enviar.")
+        setErrorMessage("Sessão expirada. Faça login novamente.")
         return
       }
 
-      // 1. Upload do áudio
       const uploadResponse = await fetch(`${API_BASE}/api/audio/upload`, {
         method: "POST",
         body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
 
       if (!uploadResponse.ok) {
@@ -224,12 +231,6 @@ function IndexPopup() {
       }
 
       const uploadData = await uploadResponse.json()
-      const fileId = uploadData.file_id
-
-      // 2. Dispara o processamento automaticamente
-      setStatus("uploading")
-      setErrorMessage("Transcrevendo áudio...")
-
       const processResponse = await fetch(`${API_BASE}/api/process-audio`, {
         method: "POST",
         headers: {
@@ -237,7 +238,7 @@ function IndexPopup() {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          file_id: fileId,
+          file_id: uploadData.file_id,
           repo_full_name: null,
           assignees: []
         })
@@ -245,13 +246,11 @@ function IndexPopup() {
 
       if (!processResponse.ok) {
         const errText = await processResponse.text()
-        console.warn("Processamento falhou, mas upload foi concluído:", errText)
-        // Não falha totalmente - o upload já foi feito e o registro criado
-      } else {
-        await processResponse.json()
+      console.warn("Processamento falhou, mas upload foi concluído:", errText)
       }
 
       setStatus("success")
+      setRecordingCount((count) => count + 1)
     } catch (err: any) {
       console.error("Upload error:", err)
       setStatus("error")
@@ -265,69 +264,59 @@ function IndexPopup() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  useEffect(() => {
-    const chromeAny = (window as any).chrome
-    const loadToken = async () => {
-      try {
-        if (!chromeAny?.storage?.local) {
-          setAuthState("unauthenticated")
-          return
-        }
-        const data = await chromeAny.storage.local.get(AUTH_TOKEN_KEY)
-        if (data && data[AUTH_TOKEN_KEY]) setAuthState("authenticated")
-        else setAuthState("unauthenticated")
-      } catch {
-        setAuthState("unauthenticated")
-      }
-    }
-    loadToken()
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [])
-
-  return (
-    <div className={`app-layout ${!isInsideTab ? "popup-shell" : ""}`}>
-      {authState === "unknown" && (
-        <div className="auth-loading" style={{ minHeight: "100vh" }}>
+  if (authState === "unknown") {
+    return (
+      <div className="dashboard-page">
+        <div className="auth-loading">
           <div className="auth-loading-spinner" />
           <p>Verificando autenticação...</p>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {authState === "unauthenticated" && (
-        !isInsideTab ? (
-          <RecorderWelcome onOpenInTab={openInTab} />
-        ) : (
-          <div className="auth-page">
-            <div className="auth-card">
-              <div className="auth-card-icon">
-                <img src={Logo} alt="Anota AI" className="w-10 h-10" /> 
-              </div>
-              <h1 className="auth-card-title">Anota aí</h1>
-              <p className="auth-card-desc">
-                Faça login com GitHub para gravar áudios, transcrever e criar tasks automaticamente nos seus repositórios.
-              </p>
-              <button onClick={loginWithGithub} className="btn-github-login">
-                <GithubIcon size={16} />
-                Entrar com GitHub
-              </button>
+  if (authState === "unauthenticated") {
+    return (
+      <div className="dashboard-page">
+        <div className="auth-page">
+          <div className="auth-card">
+            <div className="auth-card-icon">
+              <img src={Logo} alt="Anota AI" className="auth-logo" />
             </div>
+            <h1 className="auth-card-title">Anota aí</h1>
+            <p className="auth-card-desc">
+              Faça login com GitHub para gravar áudios, transcrever e criar tasks automaticamente nos seus repositórios.
+            </p>
+            <button onClick={loginWithGithub} className="btn-github-login">
+              <GithubIcon size={16} />
+              Entrar com GitHub
+            </button>
           </div>
-        )
-      )}
+        </div>
+      </div>
+    )
+  }
 
-      {authState === "authenticated" && (
-        <div className="app-dashboard">
-          <Sidebar
-            activeTab={activeTab}
-            onTabChange={(tab) => { setActiveTab(tab); setSelectedRecord(null) }}
+  return (
+    <div className="dashboard-page">
+      <div className="app-dashboard">
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab)
+            setSelectedRecord(null)
+          }}
+          userName={githubLogin || undefined}
+          recordingCount={recordingCount}
+          isCollapsed={sidebarCollapsed}
+          isInsideTab
+        />
+        <div className="dashboard-shell">
+          <Header
+            isSidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
             userName={githubLogin || undefined}
             recordingCount={recordingCount}
-            isCollapsed={!isInsideTab ? false : sidebarCollapsed}
-            isInsideTab={isInsideTab}
-            onOpenInTab={openInTab}
           />
           <main className="app-content">
             {selectedRecord ? (
@@ -350,8 +339,8 @@ function IndexPopup() {
                   status={status}
                   errorMessage={errorMessage}
                   onStartStop={() => {
-                    if (!isRecording) { startRecording() }
-                    else { stopRecording() }
+                    if (isRecording) stopRecording()
+                    else startRecording()
                   }}
                   onTogglePlayback={togglePlayback}
                   onReset={resetRecorder}
@@ -362,29 +351,13 @@ function IndexPopup() {
               <div className="history-panel">
                 <HistoryDashboard
                   onViewDetail={(record) => setSelectedRecord(record)}
-                  onRecordsLoaded={(count) => {
-                    setRecordingCount(count)
-                    if (!githubLogin) {
-                      const chromeAny = (window as any).chrome
-                      chromeAny?.storage?.local?.get(AUTH_TOKEN_KEY, (data: any) => {
-                        try {
-                          const token = data?.[AUTH_TOKEN_KEY]
-                          if (token) {
-                            const payload = JSON.parse(atob(token.split(".")[1]))
-                            if (payload.github_login) setGithubLogin(payload.github_login)
-                          }
-                        } catch {}
-                      })
-                    }
-                  }}
+                  onRecordsLoaded={(count) => setRecordingCount(count)}
                 />
               </div>
             )}
           </main>
         </div>
-      )}
+      </div>
     </div>
   )
 }
-
-export default IndexPopup

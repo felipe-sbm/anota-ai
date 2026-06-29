@@ -2,8 +2,8 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class ProcessAudioRequest(BaseModel):
-    # Repo alvo em formato: org/repo
-    repo_full_name: str = Field(..., description="GitHub repo full name, ex: org/repo")
+    # Repo alvo em formato: org/repo (opcional - se não informado, só transcreve e sumariza)
+    repo_full_name: Optional[str] = Field(default=None, description="GitHub repo full name, ex: org/repo")
 
     # Logins GitHub
     assignees: List[str] = Field(default_factory=list)

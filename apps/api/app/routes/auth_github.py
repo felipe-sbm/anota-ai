@@ -48,6 +48,13 @@ async def github_callback(request: Request, code: str | None = None, error: str 
         }
     )
 
-    # extensão geralmente espera json para armazenar token
-    return JSONResponse({"access_token": jwt_token, "token_type": "bearer"})
+    # redireciona para a URL de sucesso com o token como query param
+    # a extensão monitora abas com URL começando por {base}/api/auth/github/success?token=...
+    success_url = str(request.base_url) + "api/auth/github/success?token=" + jwt_token
+    return RedirectResponse(url=success_url)
+
+
+@app_router.get("/success")
+async def github_success():
+    return JSONResponse({"message": "Autenticado com sucesso! Você já pode fechar esta aba."})
 

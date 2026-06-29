@@ -1,4 +1,7 @@
+import { SquareArrowOutUpRight } from "lucide-react"
 import React from "react"
+
+const iconImg = new URL("../assets/icon.png", import.meta.url).toString()
 
 type Props = {
   onOpenInTab: () => void
@@ -6,33 +9,30 @@ type Props = {
 
 export default function RecorderWelcome({ onOpenInTab }: Props) {
   return (
-    <>
-      <div className="header header--welcome" style={{ marginBottom: "10px" }}>
-        <h1>Anota aí</h1>
-        <p>Para gravar com segurança e garantir acesso total ao microfone, abra o gravador em uma nova aba.</p>
+    <div className="recorder-welcome">
+      <div className="recorder-welcome-shell">
+        <div className="recorder-welcome-body">
+          <div className="recorder-welcome-icon-wrap" aria-hidden="true">
+            <img
+              src={iconImg}
+              alt="Anota Aí Logo"
+              className="recorder-welcome-icon"
+            />
+          </div>
+
+          <div className="recorder-welcome-text">
+            <h1 className="recorder-welcome-title">Anota Aí!</h1>
+            <p className="recorder-welcome-desc">
+              Para começar a facilitar a suas reuniões, abra o app em uma nova aba, pressionando o botão abaixo.
+            </p>
+          </div>
+        </div>
+
+        <button onClick={onOpenInTab} className="btn-open-recorder">
+          <SquareArrowOutUpRight size={16} />
+          Abrir Gravador
+        </button>
       </div>
-
-      <button
-        onClick={onOpenInTab}
-        className="btn-open-recorder"
-        style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)" }}>
-
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" y1="14" x2="21" y2="3" />
-        </svg>
-        Abrir Gravador
-      </button>
-    </>
+    </div>
   )
 }
-
