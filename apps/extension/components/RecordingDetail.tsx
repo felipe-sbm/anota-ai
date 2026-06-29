@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react"
 import React, { useEffect, useState } from "react"
+import Select from "react-select"
 
 import { API_BASE, AUTH_TOKEN_KEY } from "../config"
 
@@ -234,7 +235,17 @@ export default function RecordingDetail({ record, onBack }: Props) {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => null)
-        throw new Error(errData?.detail || "Falha ao criar issues")
+        const detail = errData?.detail || "Falha ao criar issues"
+        // Check for 403 - authorization error
+        if (response.status === 403) {
+          throw new Error(
+            "Permissão negada pelo GitHub (403). " +
+            "O app 'Anota Aí' precisa ser instalado na sua conta/organização para criar issues. " +
+            "Acesse: https://github.com/apps/anota-ai/installations/new e instale o app " +
+            "na conta que possui o repositório selecionado."
+          )
+        }
+        throw new Error(detail)
       }
 
       const result = await response.json()
@@ -476,24 +487,30 @@ export default function RecordingDetail({ record, onBack }: Props) {
                         <label className="issue-config-label">
                           Repositório *
                         </label>
-                        <select
-                          value={config.repo_full_name}
-                          onChange={(e) =>
+                        <Select
+                          value={
+                            config.repo_full_name
+                              ? { label: config.repo_full_name, value: config.repo_full_name }
+                              : null
+                          }
+                          onChange={(option) =>
                             updateTaskConfig(
                               index,
                               "repo_full_name",
-                              e.target.value
+                              option ? option.value : ""
                             )
                           }
-                          className="issue-config-select"
-                          disabled={reposLoading}>
-                          <option value="">Selecione um repositório</option>
-                          {repos.map((repo) => (
-                            <option key={repo.full_name} value={repo.full_name}>
-                              {repo.full_name} {repo.private ? "🔒" : ""}
-                            </option>
-                          ))}
-                        </select>
+                          options={repos.map((repo) => ({
+                            label: repo.full_name,
+                            value: repo.full_name
+                          }))}
+                          isMulti={false}
+                          isClearable={true}
+                          placeholder="Selecione um repositório"
+                          noOptionsMessage={() => "Nenhum repositório encontrado"}
+                          loadingMessage={() => "Carregando repositórios..."}
+                          isLoading={reposLoading}
+                        />
                       </div>
 
                       <div className="issue-config-field">

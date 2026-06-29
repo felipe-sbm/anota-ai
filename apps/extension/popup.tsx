@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 
-import "./styles/recorder.css"
+import "./styles/recorder.scss"
 const Logo = new URL("./assets/logo.png", import.meta.url).toString()
 
 import RecorderControls from "./components/RecorderControls"
@@ -296,7 +296,7 @@ function IndexPopup() {
               <p className="auth-card-desc">
                 Faça login com GitHub para gravar áudios, transcrever e criar tasks automaticamente nos seus repositórios.
               </p>
-              <button onClick={loginWithGithub} className="btn-github-login">
+              <button onClick={loginWithGithub} className="btn-login">
                 <GithubIcon size={16} />
                 Entrar com GitHub
               </button>

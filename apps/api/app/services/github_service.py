@@ -51,19 +51,41 @@ class GithubService:
         assignee: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a single issue in a specific repo with an optional assignee."""
-        repo = self._gh.get_repo(repo_full_name)
-        assignees = [assignee] if assignee else []
-        issue = repo.create_issue(
-            title=title,
-            body=body,
-            assignees=assignees,
-        )
-        return {
-            "number": issue.number,
-            "id": issue.id,
-            "html_url": issue.html_url,
-            "repo_full_name": repo_full_name,
-        }
+        from github import GithubException
+        try:
+            repo = self._gh.get_repo(repo_full_name)
+            assignees = [assignee] if assignee else []
+            issue = repo.create_issue(
+                title=title,
+                body=body,
+                assignees=assignees,
+            )
+            return {
+                "number": issue.number,
+                "id": issue.id,
+                "html_url": issue.html_url,
+                "repo_full_name": repo_full_name,
+            }
+        except GithubException as e:
+            status = e.status if hasattr(e, 'status') else 0
+            data = e.data if hasattr(e, 'data') else {}
+            error_msg = str(e)
+
+            if status == 403:
+                # "Resource not accessible by integration" = GitHub App not installed on the org/user account
+                if "resource not accessible" in error_msg.lower() or "integration" in error_msg.lower():
+                    raise RuntimeError(
+                        f"O Anota Aí (GitHub App) não tem permissão para criar issues em '{repo_full_name}'. "
+                        f"O app precisa ser instalado na sua conta ou organização. "
+                        f"Acesse: https://github.com/apps/anota-ai/installations/new e instale o app "
+                        f"na conta/organização que possui o repositório '{repo_full_name.split('/')[0]}'."
+                    )
+                # Missing scopes
+                if "scope" in error_msg.lower() or "insufficient" in error_msg.lower():
+                    raise RuntimeError(
+                        f"Token sem permissão 'repo'. Faça login novamente para atualizar as permissões."
+                    )
+            raise RuntimeError(f"Erro do GitHub ao criar issue em '{repo_full_name}': {error_msg}")
 
     def list_user_repos(self) -> List[Dict[str, Any]]:
         """List repositories the authenticated user has access to."""

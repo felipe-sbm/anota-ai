@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 
-import "../styles/recorder.css"
-import "../styles/dashboard.css"
-import "../styles/dashboard-page.css"
+import "../styles/recorder.scss"
+import "../styles/dashboard.scss"
+import "../styles/dashboard-page.scss"
 
 import Header from "../components/Header"
 import HistoryDashboard from "../components/HistoryDashboard"
@@ -338,7 +338,7 @@ export default function DashboardPage() {
             <p className="auth-card-desc">
               Faça login com GitHub para gravar áudios, transcrever e criar tasks automaticamente nos seus repositórios.
             </p>
-            <button onClick={loginWithGithub} className="btn-github-login">
+            <button onClick={loginWithGithub} className="btn-login">
               <GithubIcon size={16} />
               Entrar com GitHub
             </button>
@@ -374,42 +374,48 @@ export default function DashboardPage() {
           <main className="app-content">
             {selectedRecord ? (
               <RecordingDetail record={selectedRecord} onBack={() => setSelectedRecord(null)} />
-            ) : activeTab === "recorder" ? (
-              <div className="recorder-panel">
-                <RecorderStatus status={status} errorMessage={errorMessage} />
-                <RecorderVisualizer
-                  isRecording={isRecording}
-                  recordingTime={recordingTime}
-                  audioBlob={audioBlob}
-                  formatTime={formatTime}
-                />
-                <RecorderControls
-                  audioBlob={audioBlob}
-                  isRecording={isRecording}
-                  isPlaying={isPlaying}
-                  audioUrl={audioUrl}
-                  audioRef={audioRef}
-                  status={status}
-                  errorMessage={errorMessage}
-                  onStartStop={() => {
-                    if (isRecording) stopRecording()
-                    else startRecording()
-                  }}
-                  onTogglePlayback={togglePlayback}
-                  onReset={resetRecorder}
-                  onUpload={uploadAudio}
-                />
-              </div>
-            ) : activeTab === "history" ? (
-              <div className="history-panel">
-                <HistoryDashboard
-                  onViewDetail={(record) => setSelectedRecord(record)}
-                />
-              </div>
             ) : (
-              <div className="teams-panel">
-                <TeamsTab />
-              </div>
+              <>
+                <div className="tab-content" style={{ display: activeTab === "recorder" ? "block" : "none" }}>
+                  <div className="recorder-panel">
+                    <RecorderStatus status={status} errorMessage={errorMessage} />
+                    <RecorderVisualizer
+                      isRecording={isRecording}
+                      recordingTime={recordingTime}
+                      audioBlob={audioBlob}
+                      formatTime={formatTime}
+                    />
+                    <RecorderControls
+                      audioBlob={audioBlob}
+                      isRecording={isRecording}
+                      isPlaying={isPlaying}
+                      audioUrl={audioUrl}
+                      audioRef={audioRef}
+                      status={status}
+                      errorMessage={errorMessage}
+                      onStartStop={() => {
+                        if (isRecording) stopRecording()
+                        else startRecording()
+                      }}
+                      onTogglePlayback={togglePlayback}
+                      onReset={resetRecorder}
+                      onUpload={uploadAudio}
+                    />
+                  </div>
+                </div>
+                <div className="tab-content" style={{ display: activeTab === "history" ? "block" : "none" }}>
+                  <div className="history-panel">
+                    <HistoryDashboard
+                      onViewDetail={(record) => setSelectedRecord(record)}
+                    />
+                  </div>
+                </div>
+                <div className="tab-content" style={{ display: activeTab === "teams" ? "block" : "none" }}>
+                  <div className="teams-panel">
+                    <TeamsTab />
+                  </div>
+                </div>
+              </>
             )}
           </main>
         </div>

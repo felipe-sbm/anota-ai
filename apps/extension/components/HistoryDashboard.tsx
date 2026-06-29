@@ -150,6 +150,15 @@ export default function HistoryDashboard({ onViewDetail, onRecordsLoaded }: Prop
 
   return (
     <div className="history-dashboard">
+      <div className="history-header">
+        <div>
+          <h2 className="history-title">Histórico</h2>
+          <p className="history-description">
+            Acompanhe gravações, estados de processamento e atalhos para abrir cada áudio com uma leitura limpa.
+          </p>
+        </div>
+      </div>
+
       {hasRecords && (
         <div className="history-stats">
           <div className="stat-card"><span className="stat-value">{stats.total}</span><span className="stat-label">Total</span></div>

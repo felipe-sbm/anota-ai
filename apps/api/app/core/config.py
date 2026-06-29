@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str
     GITHUB_CLIENT_SECRET: str
     GITHUB_REDIRECT_URI: str
-    GITHUB_SCOPE: str = "repo"  # pode ampliar se necessário
+    GITHUB_SCOPE: str = "repo,user"  # repo para issues, user para info do perfil
 
     JWT_SECRET: str
     JWT_ALG: str = "HS256"
