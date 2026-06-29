@@ -6,7 +6,9 @@ import "../styles/dashboard-page.css"
 
 import Header from "../components/Header"
 import HistoryDashboard from "../components/HistoryDashboard"
+
 import RecorderControls from "../components/RecorderControls"
+
 import RecorderStatus from "../components/RecorderStatus"
 import RecorderVisualizer from "../components/RecorderVisualizer"
 import RecordingDetail from "../components/RecordingDetail"
@@ -47,8 +49,35 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>("recorder")
   const [selectedRecord, setSelectedRecord] = useState<Recording | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [recordingCount, setRecordingCount] = useState(0)
+  const [recordingCount, setRecordingCount] = useState<number>(0)
+
+  useEffect(() => {
+    const chromeAny = (window as any).chrome
+    const loadCount = async () => {
+      try {
+        const tokenResp = await chromeAny?.storage?.local?.get(AUTH_TOKEN_KEY)
+        const token = tokenResp?.[AUTH_TOKEN_KEY] as string | undefined
+        if (!token) return
+
+        const resp = await fetch(`${API_BASE}/api/audio/records/count`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!resp.ok) return
+        const data = await resp.json()
+        const c = typeof data?.count === "number" ? data.count : 0
+        setRecordingCount(c)
+      } catch {
+        // noop
+      }
+    }
+
+    loadCount()
+  }, [])
+
   const [githubLogin, setGithubLogin] = useState("")
+  const [githubAvatarUrl, setGithubAvatarUrl] = useState<string | undefined>(undefined)
+
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -69,6 +98,9 @@ export default function DashboardPage() {
 
         setAuthState("authenticated")
         hydrateUserFromToken(token)
+        hydrateAvatarFromBackend(token)
+
+
       } catch {
         setAuthState("unauthenticated")
       }
@@ -88,6 +120,23 @@ export default function DashboardPage() {
       if (payload.github_login) setGithubLogin(payload.github_login)
     } catch {}
   }
+
+  const hydrateAvatarFromBackend = (token: string) => {
+    fetch(`${API_BASE}/api/auth/github/me`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((resp) => {
+        if (!resp.ok) return null
+        return resp.json()
+      })
+      .then((data) => {
+        if (data?.avatar_url) setGithubAvatarUrl(data.avatar_url)
+      })
+      .catch(() => {})
+  }
+
+
 
   const loginWithGithub = () => {
     const chromeAny = (window as any).chrome
@@ -316,8 +365,10 @@ export default function DashboardPage() {
             isSidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
             userName={githubLogin || undefined}
+            userAvatarUrl={githubAvatarUrl}
             recordingCount={recordingCount}
           />
+
           <main className="app-content">
             {selectedRecord ? (
               <RecordingDetail record={selectedRecord} onBack={() => setSelectedRecord(null)} />
@@ -351,8 +402,8 @@ export default function DashboardPage() {
               <div className="history-panel">
                 <HistoryDashboard
                   onViewDetail={(record) => setSelectedRecord(record)}
-                  onRecordsLoaded={(count) => setRecordingCount(count)}
                 />
+
               </div>
             )}
           </main>

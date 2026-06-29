@@ -1,11 +1,30 @@
 from __future__ import annotations
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse, JSONResponse
+
 from ..core.config import settings
-from ..core.security import create_jwt
+from ..core.security import create_jwt, verify_jwt
 from ..services.auth_service import github_exchange_code_for_token, github_get_user
 
 app_router = APIRouter(prefix="/api/auth/github", tags=["auth"])
+
+
+def _get_bearer_token(authorization: str | None):
+    if not authorization:
+        return None
+    if not authorization.startswith("Bearer "):
+        return None
+    return authorization.split(" ", 1)[1]
+
+
+async def require_auth(authorization: str = Header(None)):
+    token = _get_bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization")
+    try:
+        return verify_jwt(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 @app_router.get("/login")
@@ -24,7 +43,11 @@ async def github_login():
 
 
 @app_router.get("/callback")
-async def github_callback(request: Request, code: str | None = None, error: str | None = None):
+async def github_callback(
+    request: Request,
+    code: str | None = None,
+    error: str | None = None,
+):
     if error:
         raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
     if not code:
@@ -57,4 +80,23 @@ async def github_callback(request: Request, code: str | None = None, error: str 
 @app_router.get("/success")
 async def github_success():
     return JSONResponse({"message": "Autenticado com sucesso! Você já pode fechar esta aba."})
+
+
+@app_router.get("/me")
+async def github_me(auth=Depends(require_auth)):
+
+    github_access_token = auth.get("github_access_token")
+    github_login = auth.get("github_login")
+    if not github_access_token:
+        raise HTTPException(status_code=401, detail="github_access_token missing in JWT")
+
+    user = await github_get_user(github_access_token)
+    return JSONResponse(
+        {
+            "github_login": github_login or user.get("login"),
+            "avatar_url": user.get("avatar_url"),
+            "name": user.get("name"),
+        }
+    )
+
 

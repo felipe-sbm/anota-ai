@@ -108,6 +108,23 @@ def list_records(user_github_login: str, limit: int = 50, offset: int = 0) -> li
     return [_row_to_dict(r) for r in rows]
 
 
+def count_records(user_github_login: str) -> int:
+    conn = _get_conn()
+    row = conn.execute(
+        """
+        SELECT COUNT(*) as total
+        FROM audio_records
+        WHERE user_github_login = ?
+        """,
+        (user_github_login,),
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return 0
+    return int(row["total"])
+
+
+
 def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
     # Parse JSON fields back to Python objects

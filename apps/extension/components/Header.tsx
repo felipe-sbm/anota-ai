@@ -4,6 +4,7 @@ type Props = {
   isSidebarCollapsed: boolean
   onToggleSidebar: () => void
   userName?: string
+  userAvatarUrl?: string
   recordingCount?: number
 }
 
@@ -11,10 +12,13 @@ export default function Header({
   isSidebarCollapsed,
   onToggleSidebar,
   userName,
+  userAvatarUrl,
   recordingCount
 }: Props) {
   const displayName = userName || "Usuário"
   const initial = displayName.charAt(0).toUpperCase()
+
+  const showAvatarImage = Boolean(userAvatarUrl)
 
   return (
     <header className="app-header">
@@ -45,9 +49,20 @@ export default function Header({
           )}
         </div>
         <div className="app-header-avatar" aria-hidden="true">
-          {userName ? initial : <User size={16} />}
+          {showAvatarImage ? (
+            <img
+              src={userAvatarUrl}
+              alt={displayName}
+              className="app-header-avatar-img"
+            />
+          ) : userName ? (
+            initial
+          ) : (
+            <User size={16} />
+          )}
         </div>
       </div>
     </header>
   )
 }
+

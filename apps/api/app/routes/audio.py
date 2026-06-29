@@ -7,7 +7,8 @@ import uuid
 from fastapi import APIRouter, Depends, Header, UploadFile, File, HTTPException
 
 from ..core.security import verify_jwt
-from ..models.database import insert_record, get_record, list_records
+from ..models.database import insert_record, get_record, list_records, count_records
+
 
 app_router = APIRouter(prefix="/api/audio", tags=["audio"])
 
@@ -53,6 +54,7 @@ async def upload_audio(
         shutil.copyfileobj(file.file, buffer)
 
     # Cria registro no banco de dados
+    print("[DEBUG] upload_audio auth payload:", auth)
     github_login = auth.get("github_login", "")
     record = insert_record(
         record_id=file_id,
@@ -75,12 +77,23 @@ async def list_audio_records(
     offset: int = 0,
     auth=Depends(require_auth),
 ):
+    print("[DEBUG] list_audio_records auth payload:", auth)
     github_login = auth.get("github_login", "")
     if not github_login:
         raise HTTPException(status_code=400, detail="github_login not found in token")
 
     records = list_records(user_github_login=github_login, limit=limit, offset=offset)
     return {"records": records}
+
+
+@app_router.get("/records/count")
+async def count_audio_records(auth=Depends(require_auth)):
+    github_login = auth.get("github_login", "")
+    if not github_login:
+        raise HTTPException(status_code=400, detail="github_login not found in token")
+
+    total = count_records(user_github_login=github_login)
+    return {"count": total}
 
 
 @app_router.get("/records/{file_id}")
@@ -98,3 +111,4 @@ async def get_audio_record(
         raise HTTPException(status_code=404, detail="Record not found")
 
     return {"record": record}
+

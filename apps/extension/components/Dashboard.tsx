@@ -18,16 +18,45 @@ type Recording = {
 
 type Props = {
   onViewDetail: (record: Recording) => void
+  onRecordingCount?: (count: number) => void
 }
 
-export default function Dashboard({ onViewDetail }: Props) {
+export default function Dashboard({ onViewDetail, onRecordingCount }: Props) {
+
   const [records, setRecords] = useState<Recording[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [count, setCount] = useState<number | null>(null)
+
 
   useEffect(() => {
+    const loadCount = async () => {
+      try {
+        const chromeAny = (window as any).chrome
+        const tokenResp = await chromeAny?.storage?.local?.get(AUTH_TOKEN_KEY)
+        const token = tokenResp?.[AUTH_TOKEN_KEY] as string | undefined
+        if (!token) return
+
+        const resp = await fetch(`${API_BASE}/api/audio/records/count`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (!resp.ok) return
+        const data = await resp.json()
+        const c = typeof data?.count === "number" ? data.count : 0
+        setCount(c)
+        onRecordingCount?.(c)
+
+      } catch {
+        // noop
+      }
+    }
+
     loadRecords()
+    loadCount()
   }, [])
+
 
   const loadRecords = async () => {
     setLoading(true)

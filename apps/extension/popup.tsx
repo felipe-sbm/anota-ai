@@ -11,6 +11,8 @@ import RecorderWelcome from "./components/RecorderWelcome"
 import RecordingDetail from "./components/RecordingDetail"
 import Sidebar from "./components/Sidebar"
 import HistoryDashboard from "./components/HistoryDashboard"
+import Header from "./components/Header"
+
 
 import { AUTH_TOKEN_KEY, API_BASE, AUTH_LOGIN_URL, AUTH_SUCCESS_URL_PREFIX } from "./config"
 import { GithubIcon } from "lucide-react";
@@ -51,6 +53,8 @@ function IndexPopup() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [recordingCount, setRecordingCount] = useState(0)
   const [githubLogin, setGithubLogin] = useState("")
+  const [githubAvatarUrl, setGithubAvatarUrl] = useState<string | undefined>(undefined)
+
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -274,8 +278,33 @@ function IndexPopup() {
           return
         }
         const data = await chromeAny.storage.local.get(AUTH_TOKEN_KEY)
-        if (data && data[AUTH_TOKEN_KEY]) setAuthState("authenticated")
-        else setAuthState("unauthenticated")
+        const token = data?.[AUTH_TOKEN_KEY] as string | undefined
+        if (!token) {
+          setAuthState("unauthenticated")
+          return
+        }
+
+        // hydrata user (login)
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]))
+          if (payload?.github_login) setGithubLogin(payload.github_login)
+        } catch {}
+
+        // hydrata avatar
+        fetch(`${API_BASE}/api/auth/github/me`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then((resp) => {
+            if (!resp.ok) return null
+            return resp.json()
+          })
+          .then((d) => {
+            if (d?.avatar_url) setGithubAvatarUrl(d.avatar_url)
+          })
+          .catch(() => {})
+
+        setAuthState("authenticated")
       } catch {
         setAuthState("unauthenticated")
       }
@@ -286,6 +315,7 @@ function IndexPopup() {
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [])
+
 
   return (
     <div className={`app-layout ${!isInsideTab ? "popup-shell" : ""}`}>
@@ -330,6 +360,7 @@ function IndexPopup() {
             onOpenInTab={openInTab}
           />
           <main className="app-content">
+
             {selectedRecord ? (
               <RecordingDetail record={selectedRecord} onBack={() => setSelectedRecord(null)} />
             ) : activeTab === "recorder" ? (
