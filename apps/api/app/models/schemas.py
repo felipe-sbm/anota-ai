@@ -33,3 +33,15 @@ class JwtSubject(BaseModel):
     sub: str
     github_login: Optional[str] = None
 
+
+class IssueTaskConfig(BaseModel):
+    """Config for a single issue to be created"""
+    title: str
+    body: str = ""
+    repo_full_name: str
+    assignee: Optional[str] = Field(default=None, description="GitHub login do responsável")
+
+
+class CreateIssuesBatchRequest(BaseModel):
+    file_id: Optional[str] = Field(default=None, description="Se informado, atualiza o registro com as issues criadas")
+    tasks: List[IssueTaskConfig] = Field(min_length=1)

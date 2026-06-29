@@ -1,42 +1,18 @@
 import { useState, useRef, useEffect } from "react"
 
 import "./styles/recorder.css"
-import "./styles/dashboard.css"
 const Logo = new URL("./assets/logo.png", import.meta.url).toString()
 
 import RecorderControls from "./components/RecorderControls"
 import RecorderStatus from "./components/RecorderStatus"
 import RecorderVisualizer from "./components/RecorderVisualizer"
 import RecorderWelcome from "./components/RecorderWelcome"
-import RecordingDetail from "./components/RecordingDetail"
-import Sidebar from "./components/Sidebar"
-import HistoryDashboard from "./components/HistoryDashboard"
-import Header from "./components/Header"
-
-
 import { AUTH_TOKEN_KEY, API_BASE, AUTH_LOGIN_URL, AUTH_SUCCESS_URL_PREFIX } from "./config"
-import { GithubIcon } from "lucide-react";
+import { GithubIcon, SquareArrowOutUpRight } from "lucide-react"
 
 type Status = "idle" | "recording" | "recorded" | "uploading" | "success" | "error"
 
 type AuthState = "unknown" | "authenticated" | "unauthenticated"
-
-type Tab = "recorder" | "history"
-
-type Recording = {
-  id: string
-  file_id: string
-  filename: string
-  original_filename: string
-  created_at: string
-  status: string
-  transcript: string | null
-  summary: string | null
-  tasks: { title: string; body: string; assignees: string[] }[] | null
-  created_issues: { number: number; html_url: string }[] | null
-  repo_full_name: string | null
-  error_message: string | null
-}
 
 function IndexPopup() {
   const [authState, setAuthState] = useState<AuthState>("unknown")
@@ -48,13 +24,6 @@ function IndexPopup() {
   const [status, setStatus] = useState<Status>("idle")
   const [errorMessage, setErrorMessage] = useState("")
   const [isPlaying, setIsPlaying] = useState(false)
-  const [activeTab, setActiveTab] = useState<Tab>("recorder")
-  const [selectedRecord, setSelectedRecord] = useState<Recording | null>(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [recordingCount, setRecordingCount] = useState(0)
-  const [githubLogin, setGithubLogin] = useState("")
-  const [githubAvatarUrl, setGithubAvatarUrl] = useState<string | undefined>(undefined)
-
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -284,26 +253,6 @@ function IndexPopup() {
           return
         }
 
-        // hydrata user (login)
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]))
-          if (payload?.github_login) setGithubLogin(payload.github_login)
-        } catch {}
-
-        // hydrata avatar
-        fetch(`${API_BASE}/api/auth/github/me`, {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` }
-        })
-          .then((resp) => {
-            if (!resp.ok) return null
-            return resp.json()
-          })
-          .then((d) => {
-            if (d?.avatar_url) setGithubAvatarUrl(d.avatar_url)
-          })
-          .catch(() => {})
-
         setAuthState("authenticated")
       } catch {
         setAuthState("unauthenticated")
@@ -320,7 +269,7 @@ function IndexPopup() {
   return (
     <div className={`app-layout ${!isInsideTab ? "popup-shell" : ""}`}>
       {authState === "unknown" && (
-        <div className="auth-loading" style={{ minHeight: "100vh" }}>
+        <div className="auth-loading" style={{ minHeight: !isInsideTab ? "420px" : "100vh" }}>
           <div className="auth-loading-spinner" />
           <p>Verificando autenticação...</p>
         </div>
@@ -328,7 +277,15 @@ function IndexPopup() {
 
       {authState === "unauthenticated" && (
         !isInsideTab ? (
-          <RecorderWelcome onOpenInTab={openInTab} />
+          <div className="popup-shell-content">
+            <RecorderWelcome />
+            <footer className="popup-footer">
+              <button onClick={openInTab} className="btn-open-recorder">
+                <SquareArrowOutUpRight size={16} />
+                Abrir o painel de controle
+              </button>
+            </footer>
+          </div>
         ) : (
           <div className="auth-page">
             <div className="auth-card">
@@ -349,69 +306,43 @@ function IndexPopup() {
       )}
 
       {authState === "authenticated" && (
-        <div className="app-dashboard">
-          <Sidebar
-            activeTab={activeTab}
-            onTabChange={(tab) => { setActiveTab(tab); setSelectedRecord(null) }}
-            userName={githubLogin || undefined}
-            recordingCount={recordingCount}
-            isCollapsed={!isInsideTab ? false : sidebarCollapsed}
-            isInsideTab={isInsideTab}
-            onOpenInTab={openInTab}
-          />
-          <main className="app-content">
-
-            {selectedRecord ? (
-              <RecordingDetail record={selectedRecord} onBack={() => setSelectedRecord(null)} />
-            ) : activeTab === "recorder" ? (
-              <div className="recorder-panel">
-                <RecorderStatus status={status} errorMessage={errorMessage} />
-                <RecorderVisualizer
-                  isRecording={isRecording}
-                  recordingTime={recordingTime}
-                  audioBlob={audioBlob}
-                  formatTime={formatTime}
-                />
-                <RecorderControls
-                  audioBlob={audioBlob}
-                  isRecording={isRecording}
-                  isPlaying={isPlaying}
-                  audioUrl={audioUrl}
-                  audioRef={audioRef}
-                  status={status}
-                  errorMessage={errorMessage}
-                  onStartStop={() => {
-                    if (!isRecording) { startRecording() }
-                    else { stopRecording() }
-                  }}
-                  onTogglePlayback={togglePlayback}
-                  onReset={resetRecorder}
-                  onUpload={uploadAudio}
-                />
-              </div>
-            ) : (
-              <div className="history-panel">
-                <HistoryDashboard
-                  onViewDetail={(record) => setSelectedRecord(record)}
-                  onRecordsLoaded={(count) => {
-                    setRecordingCount(count)
-                    if (!githubLogin) {
-                      const chromeAny = (window as any).chrome
-                      chromeAny?.storage?.local?.get(AUTH_TOKEN_KEY, (data: any) => {
-                        try {
-                          const token = data?.[AUTH_TOKEN_KEY]
-                          if (token) {
-                            const payload = JSON.parse(atob(token.split(".")[1]))
-                            if (payload.github_login) setGithubLogin(payload.github_login)
-                          }
-                        } catch {}
-                      })
-                    }
-                  }}
-                />
-              </div>
-            )}
+        <div className="popup-shell-content">
+          <main className="popup-recorder-main">
+            <div className="recorder-panel">
+              <RecorderStatus status={status} errorMessage={errorMessage} />
+              <RecorderVisualizer
+                isRecording={isRecording}
+                recordingTime={recordingTime}
+                audioBlob={audioBlob}
+                formatTime={formatTime}
+              />
+              <RecorderControls
+                audioBlob={audioBlob}
+                isRecording={isRecording}
+                isPlaying={isPlaying}
+                audioUrl={audioUrl}
+                audioRef={audioRef}
+                status={status}
+                errorMessage={errorMessage}
+                onStartStop={() => {
+                  if (!isRecording) { startRecording() }
+                  else { stopRecording() }
+                }}
+                onTogglePlayback={togglePlayback}
+                onReset={resetRecorder}
+                onUpload={uploadAudio}
+              />
+            </div>
           </main>
+
+          <footer className="popup-footer">
+            {!isInsideTab && (
+              <button onClick={openInTab} className="btn-open-recorder">
+                <SquareArrowOutUpRight size={16} />
+                Abrir o painel de controle
+              </button>
+            )}
+          </footer>
         </div>
       )}
     </div>

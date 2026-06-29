@@ -6,6 +6,9 @@ from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec
 from ..models.database import update_record_status
 from ..services.whisper_service import transcribe_file
 from ..services.summarization_service import summarize_and_extract
+from ..services.mention_service import resolve_assignees_from_transcript
+
+
 from ..services.github_service import GithubService
 from ..core.security import verify_jwt
 from ..core.config import settings
@@ -61,9 +64,19 @@ async def process_audio(
             update_record_status(req.file_id, "error", error_message=str(e))
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
+    # Resolve assignees por menções (nome/apelido)
+    resolved_assignees = resolve_assignees_from_transcript(transcript=transcript)
+
     # sumarização e tasks
     try:
-        summarized = summarize_and_extract(transcript=transcript, assignees=req.assignees)
+        summarized = await summarize_and_extract(
+            transcript=transcript,
+            assignees=resolved_assignees or req.assignees,
+            ollama_base_url=settings.OLLAMA_BASE_URL,
+            ollama_model=settings.OLLAMA_MODEL,
+            llm_enabled=settings.LLM_SUMMARIZATION_ENABLED,
+        )
+
     except Exception as e:
         if req.file_id:
             update_record_status(req.file_id, "error", error_message=str(e))

@@ -16,9 +16,11 @@ import Sidebar from "../components/Sidebar"
 import { API_BASE, AUTH_LOGIN_URL, AUTH_SUCCESS_URL_PREFIX, AUTH_TOKEN_KEY } from "../config"
 import { GithubIcon } from "lucide-react";
 
+import TeamsTab from "./teams"
+
 type Status = "idle" | "recording" | "recorded" | "uploading" | "success" | "error"
 type AuthState = "unknown" | "authenticated" | "unauthenticated"
-type Tab = "recorder" | "history"
+type Tab = "recorder" | "history" | "teams"
 
 type Recording = {
   id: string
@@ -398,12 +400,15 @@ export default function DashboardPage() {
                   onUpload={uploadAudio}
                 />
               </div>
-            ) : (
+            ) : activeTab === "history" ? (
               <div className="history-panel">
                 <HistoryDashboard
                   onViewDetail={(record) => setSelectedRecord(record)}
                 />
-
+              </div>
+            ) : (
+              <div className="teams-panel">
+                <TeamsTab />
               </div>
             )}
           </main>

@@ -1,10 +1,10 @@
-import { History, Mic, SquareArrowOutUpRight } from "lucide-react";
+import { History, Mic, UsersRound } from "lucide-react";
 import React from "react"
 
 const logoImg = new URL("../assets/logo.png", import.meta.url).toString()
 const iconImg = new URL("../assets/icon.png", import.meta.url).toString()
 
-type SidebarTab = "recorder" | "history"
+type SidebarTab = "recorder" | "history" | "teams"
 
 type Props = {
   activeTab: SidebarTab
@@ -47,6 +47,14 @@ export default function Sidebar({
           title="Gravador">
           <Mic size={16} />
           {!isCollapsed && <span>Gravador</span>}
+        </button> 
+
+        <button
+          className={`sidebar-nav-item ${activeTab === "teams" ? "active" : ""}`}
+          onClick={() => onTabChange("teams")}
+          title="Equipes">
+          <UsersRound size={16} />
+          {!isCollapsed && <span>Equipes</span>}
         </button>
 
         <button
@@ -61,16 +69,6 @@ export default function Sidebar({
               <span className="sidebar-badge">{recordingCount}</span>
             )}
         </button>
-
-        {!isInsideTab && (
-          <button
-            className="sidebar-nav-item sidebar-open-page"
-            onClick={onOpenInTab}
-            title="Abrir na página">
-            <SquareArrowOutUpRight size={16} />
-            {!isCollapsed && <span>Abrir na página</span>}
-          </button>
-        )}
       </nav>
 
       {!isCollapsed && onLogout && (

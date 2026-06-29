@@ -1,13 +1,6 @@
-import { SquareArrowOutUpRight } from "lucide-react"
-import React from "react"
-
 const iconImg = new URL("../assets/icon.png", import.meta.url).toString()
 
-type Props = {
-  onOpenInTab: () => void
-}
-
-export default function RecorderWelcome({ onOpenInTab }: Props) {
+export default function RecorderWelcome() {
   return (
     <div className="recorder-welcome">
       <div className="recorder-welcome-shell">
@@ -23,15 +16,10 @@ export default function RecorderWelcome({ onOpenInTab }: Props) {
           <div className="recorder-welcome-text">
             <h1 className="recorder-welcome-title">Anota Aí!</h1>
             <p className="recorder-welcome-desc">
-              Para começar a facilitar a suas reuniões, abra o app em uma nova aba, pressionando o botão abaixo.
+              Abra a página para ver os resultados. Esta janela fica só para gravação.
             </p>
           </div>
         </div>
-
-        <button onClick={onOpenInTab} className="btn-open-recorder">
-          <SquareArrowOutUpRight size={16} />
-          Abrir Gravador
-        </button>
       </div>
     </div>
   )

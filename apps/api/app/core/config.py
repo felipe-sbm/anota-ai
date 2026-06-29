@@ -11,6 +11,12 @@ class Settings(BaseSettings):
 
     # OBS: Whisper é local, mas a sumarização pode depender de um modelo remoto.
     OPENAI_API_KEY: str = ""
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1:8b"
+    
+    # Se false = sem LLM
+    LLM_SUMMARIZATION_ENABLED: bool = True
+
 
     GITHUB_CLIENT_ID: str
     GITHUB_CLIENT_SECRET: str
@@ -20,8 +26,6 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     JWT_ALG: str = "HS256"
     JWT_EXPIRE_SECONDS: int = 60 * 60 * 8
-
-
 
 
 # carrega apps/api/.env por padrão
