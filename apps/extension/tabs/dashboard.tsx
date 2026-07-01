@@ -39,6 +39,25 @@ type Recording = {
 
 const Logo = new URL("../assets/logo.png", import.meta.url).toString()
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]))
+    if (!payload.exp) return false
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return true
+  }
+}
+
+function handleAuthError() {
+  const chromeAny = (window as any).chrome
+  const callback = () => {
+    chromeAny?.storage?.local?.remove(AUTH_TOKEN_KEY)
+  }
+  callback()
+  return "unauthenticated" as AuthState
+}
+
 export default function DashboardPage() {
   const [authState, setAuthState] = useState<AuthState>("unknown")
   const [isRecording, setIsRecording] = useState(false)
@@ -65,6 +84,11 @@ export default function DashboardPage() {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         })
+        if (resp.status === 401) {
+          await chromeAny?.storage?.local?.remove(AUTH_TOKEN_KEY)
+          setAuthState("unauthenticated")
+          return
+        }
         if (!resp.ok) return
         const data = await resp.json()
         const c = typeof data?.count === "number" ? data.count : 0
@@ -94,6 +118,12 @@ export default function DashboardPage() {
         const token = data?.[AUTH_TOKEN_KEY] as string | undefined
 
         if (!token) {
+          setAuthState("unauthenticated")
+          return
+        }
+
+        if (isTokenExpired(token)) {
+          await chromeAny?.storage?.local?.remove(AUTH_TOKEN_KEY)
           setAuthState("unauthenticated")
           return
         }
@@ -129,6 +159,12 @@ export default function DashboardPage() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((resp) => {
+        if (resp.status === 401) {
+          const chromeAny = (window as any).chrome
+          chromeAny?.storage?.local?.remove(AUTH_TOKEN_KEY)
+          setAuthState("unauthenticated")
+          return null
+        }
         if (!resp.ok) return null
         return resp.json()
       })

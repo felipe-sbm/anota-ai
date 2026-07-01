@@ -52,6 +52,15 @@ function getToken(): Promise<string | undefined> {
     .then((resp: any) => resp?.[AUTH_TOKEN_KEY] as string | undefined)
 }
 
+function clearTokenAndReload() {
+  const chromeAny = (window as any).chrome
+  if (chromeAny?.storage?.local) {
+    chromeAny.storage.local.remove(AUTH_TOKEN_KEY).then(() => {
+      window.location.reload()
+    })
+  }
+}
+
 export default function RecordingDetail({ record, onBack }: Props) {
   const [detail, setDetail] = useState<Recording>(record)
   const [loading, setLoading] = useState(false)

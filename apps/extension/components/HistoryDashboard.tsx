@@ -21,6 +21,15 @@ type Props = {
   onRecordsLoaded?: (count: number) => void
 }
 
+function clearTokenAndReload() {
+  const chromeAny = (window as any).chrome
+  if (chromeAny?.storage?.local) {
+    chromeAny.storage.local.remove(AUTH_TOKEN_KEY).then(() => {
+      window.location.reload()
+    })
+  }
+}
+
 export default function HistoryDashboard({ onViewDetail, onRecordsLoaded }: Props) {
   const [records, setRecords] = useState<Recording[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,6 +57,10 @@ export default function HistoryDashboard({ onViewDetail, onRecordsLoaded }: Prop
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (response.status === 401) {
+        clearTokenAndReload()
+        return
+      }
       if (!response.ok) throw new Error("Erro ao carregar gravações")
       const data = await response.json()
       const recordList = data.records || []

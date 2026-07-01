@@ -20,6 +20,15 @@ function getToken(): Promise<string | undefined> {
     .then((resp: any) => resp?.[AUTH_TOKEN_KEY] as string | undefined)
 }
 
+function clearTokenAndReload() {
+  const chromeAny = (window as any).chrome
+  if (chromeAny?.storage?.local) {
+    chromeAny.storage.local.remove(AUTH_TOKEN_KEY).then(() => {
+      window.location.reload()
+    })
+  }
+}
+
 function formatDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString("pt-BR", {
@@ -79,6 +88,10 @@ export default function TeamsTab() {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (response.status === 401) {
+        clearTokenAndReload()
+        return
+      }
       if (!response.ok) throw new Error("Erro ao carregar equipes")
       const data = await response.json()
 

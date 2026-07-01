@@ -239,6 +239,16 @@ function IndexPopup() {
   }
 
   useEffect(() => {
+    const isTokenExpired = (token: string): boolean => {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]))
+        if (!payload.exp) return false
+        return Date.now() >= payload.exp * 1000
+      } catch {
+        return true
+      }
+    }
+
     const chromeAny = (window as any).chrome
     const loadToken = async () => {
       try {
@@ -249,6 +259,12 @@ function IndexPopup() {
         const data = await chromeAny.storage.local.get(AUTH_TOKEN_KEY)
         const token = data?.[AUTH_TOKEN_KEY] as string | undefined
         if (!token) {
+          setAuthState("unauthenticated")
+          return
+        }
+
+        if (isTokenExpired(token)) {
+          await chromeAny.storage.local.remove(AUTH_TOKEN_KEY)
           setAuthState("unauthenticated")
           return
         }
