@@ -5,7 +5,6 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-
 class OllamaServiceError(RuntimeError):
     pass
 

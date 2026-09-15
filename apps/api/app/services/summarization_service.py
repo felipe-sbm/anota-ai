@@ -23,7 +23,7 @@ def build_prompt(transcript: str, assignees: List[str]) -> str:
     # forçamos JSON estrito no output para facilitar o parse do resultado.
     return f"""
 Você é um assistente que transforma o conteúdo de uma gravação em:
-1) um resumo curto
+1) um resumo completo e detalhado baseado no conteudo recebido
 2) uma lista de tarefas (issues) para um time de desenvolvimento
 
 REGRAS:

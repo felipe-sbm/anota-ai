@@ -1,8 +1,10 @@
 # Anota aí
+
 Anota aí é uma aplicação de anotações que utiliza inteligência artificial para facilitar a organização e o acesso às tarefas de equipes de desenvolvimento. O projeto é dividido em três partes principais: ui, api e ia.
 
 Esta é a estrutura do projeto:
-```
+
+```text
 sprint-notes-ai/
 │
 ├── apps/
@@ -55,32 +57,35 @@ sprint-notes-ai/
 Como iniciar o projeto:
 
 1. Clone o repositório:
-```bash
-git clone https://github.com/felipe-sbm/anota-ai.git
 
-cd anota-ai
-```
+    ```bash
+    git clone https://github.com/felipe-sbm/anota-ai.git
+
+    cd anota-ai
+    ```
 
 2. Inicie a API:
-```bash
-cd apps/api
 
-python3 -m venv .venv
+    ```bash
+    cd apps/api
 
-source .venv/bin/activate
+    python3 -m venv .venv
 
-pip install -r requirements.txt
+    source .venv/bin/activate
 
-uvicorn app.main:app --reload
-```
+    pip install -r requirements.txt
+
+    uvicorn app.main:app --reload
+    ```
 
 3. Inicie a extensão:
-```bash
-cd apps/extension
 
-npm install
+    ```bash
+    cd apps/extension
 
-npm run dev
-```
+    npm install
+
+    npm run dev
+    ```
 
 A extensão estará disponível no navegador para ser testada. A API estará rodando localmente em `http://localhost:8000`.
