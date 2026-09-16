@@ -9,6 +9,7 @@ const navLinks = ["Como Funciona", "Recursos", "Documentação", "Sobre o TCC"];
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
+      {/** Atalhos úteis */}
       <div className="border-b border-gray-100 bg-white text-[13px] text-gray-500">
         <div className="mx-auto flex h-9 max-w-[1360px] items-center justify-end gap-6 px-6">
           <a className="flex cursor-pointer items-center gap-1.5 font-normal text-gray-700 transition-colors hover:text-brand">
@@ -34,6 +35,8 @@ export function Header() {
           ))}
         </div>
       </div>
+
+      {/** Cabeçalho */}
       <div className="mx-auto flex h-20  items-center justify-between px-6">
         <div className="flex items-center gap-10">
           <a className="cursor-pointer">
@@ -57,7 +60,10 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <a className="hidden cursor-pointer rounded-full border border-brand px-5 py-2.5 text-sm font-semibold text-brand transition-all hover:bg-brand-light sm:inline-flex">
+          <a
+            className="hidden cursor-pointer rounded-full border border-brand px-5 py-2.5 text-sm font-semibold text-brand transition-all hover:bg-brand-light sm:inline-flex"
+            href="http://github.com/felipe-sbm/anota-ai"
+          >
             Ver no GitHub
           </a>
           <a className="cursor-pointer rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-hover">

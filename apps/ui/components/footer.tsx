@@ -1,12 +1,21 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
-import { Rss } from "lucide-react";
 import {
+  FacebookIcon,
   GithubIcon,
-  InstagramIcon,
   LinkedinIcon,
+  TelegramIcon,
+  WhatsAppIcon,
   XIcon,
 } from "@/components/icons";
+import {
+  facebookShareUrl,
+  linkedinShareUrl,
+  projectUrl,
+  telegramShareUrl,
+  whatsappShareUrl,
+  xShareUrl,
+} from "@/lib/share";
 
 const productLinks = [
   "Extensão Chrome",
@@ -50,13 +59,15 @@ const legalLinks = [
 
 const socialLinks: {
   label: string;
+  href: string;
   Icon: ComponentType<{ className?: string }>;
 }[] = [
-  { label: "Instagram", Icon: InstagramIcon },
-  { label: "GitHub", Icon: GithubIcon },
-  { label: "X / Twitter", Icon: XIcon },
-  { label: "LinkedIn", Icon: LinkedinIcon },
-  { label: "RSS Feed", Icon: Rss },
+  { label: "GitHub", Icon: GithubIcon, href: projectUrl() },
+  { label: "WhatsApp", Icon: WhatsAppIcon, href: whatsappShareUrl() },
+  { label: "Telegram", Icon: TelegramIcon, href: telegramShareUrl() },
+  { label: "X / Twitter", Icon: XIcon, href: xShareUrl() },
+  { label: "LinkedIn", Icon: LinkedinIcon, href: linkedinShareUrl() },
+  { label: "Facebook", Icon: FacebookIcon, href: facebookShareUrl() },
 ];
 
 function FooterColumn({ title, links }: { title: string; links: string[] }) {
@@ -92,10 +103,14 @@ export function Footer() {
               Compartilhe o projeto!
             </h4>
             <div className="flex items-center gap-4 text-gray-700">
-              {socialLinks.map(({ label, Icon }) => (
+              {socialLinks.map(({ label, href, Icon }) => (
                 <a
                   key={label}
                   aria-label={label}
+                  title={`Compartilhar o projeto no ${label}`}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="cursor-pointer transition-colors hover:text-black"
                 >
                   <Icon className="h-5 w-5" />

@@ -105,7 +105,7 @@ export default function Home() {
                 </p>
                 <div className="flex flex-wrap items-center gap-4">
                   <a className="inline-flex cursor-pointer items-center rounded-full bg-brand px-7 py-3 text-[15px] font-semibold text-white shadow-sm transition-all hover:bg-brand-hover">
-                     Acessar Dashboard da equipe
+                    Acessar Dashboard da equipe
                     {/** redireciona para a pagina do navegador que o usuário está usando :) */}
                   </a>
                 </div>
@@ -125,12 +125,15 @@ export default function Home() {
                   Fluxo Simples: Da Reunião ao GitHub
                 </h2>
                 <p className="mb-8 text-base leading-relaxed text-gray-600 sm:text-lg">
-                  Ative a extensão com dois cliques durante sua <i>Daily</i>.
-                  A inteligência artificial resume os pontos-chave e você
-                  apenas revisa as tarefas sugeridas antes de criar as issues.
+                  Ative a extensão com dois cliques durante sua <i>Daily</i>. A
+                  inteligência artificial resume os pontos-chave e você apenas
+                  revisa as tarefas sugeridas antes de criar as issues.
                 </p>
                 <div className="mb-8 flex flex-wrap items-center gap-3">
-                  <a className="inline-flex cursor-pointer items-center rounded-lg bg-black px-4 py-2 text-white transition-opacity hover:opacity-90">
+                  <a
+                    className="inline-flex cursor-pointer items-center rounded-lg bg-black px-4 py-2 text-white transition-opacity hover:opacity-90"
+                    href="https://chromewebstore.google.com/"
+                  >
                     <ChromeIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
                       <span className="block text-[9px] font-semibold uppercase tracking-wider text-gray-300">
@@ -141,7 +144,10 @@ export default function Home() {
                       </span>
                     </span>
                   </a>
-                  <a className="inline-flex cursor-pointer items-center rounded-lg bg-black px-4 py-2 text-white transition-opacity hover:opacity-90">
+                  <a
+                    className="inline-flex cursor-pointer items-center rounded-lg bg-black px-4 py-2 text-white transition-opacity hover:opacity-90"
+                    href="https://addons.mozilla.org/"
+                  >
                     <FirefoxIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
                       <span className="block text-[9px] font-semibold uppercase tracking-wider text-gray-300">
@@ -152,7 +158,10 @@ export default function Home() {
                       </span>
                     </span>
                   </a>
-                  <a className="inline-flex cursor-pointer items-center rounded-lg bg-black px-4 py-2 text-white transition-opacity hover:opacity-90">
+                  <a
+                    className="inline-flex cursor-pointer items-center rounded-lg bg-black px-4 py-2 text-white transition-opacity hover:opacity-90"
+                    href="https://microsoftedge.microsoft.com/"
+                  >
                     <EdgeIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
                       <span className="block text-[9px] font-semibold uppercase tracking-wider text-gray-300">
@@ -235,9 +244,11 @@ export default function Home() {
               Acesse o repositório no GitHub ou consulte a documentação técnica.
             </p>
             <div>
-              <a className="group inline-flex cursor-pointer items-center text-lg font-semibold text-brand transition-colors hover:text-brand-hover">
-                <span>Acessar agora!</span>
-                <ArrowRight className="ml-2 h-5 w-5" />
+              <a
+                className="group inline-flex cursor-pointer items-center text-lg font-semibold text-brand transition-colors hover:text-brand-hover"
+                href="http://github.com/felipe-sbm/anota-ai"
+              >
+                <span>Acessar agora! 🤩</span>
               </a>
             </div>
           </div>
