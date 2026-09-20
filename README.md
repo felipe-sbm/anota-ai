@@ -144,17 +144,19 @@ O projeto está em desenvolvimento (🚧), com previsão para terminar em outubr
 
 * [x] Página inicial e apresentação do produto
 * [x] Pipeline principal utilizando LangGraph
-* [ ] Processamento da transcrição
-* [ ] Geração estruturada de resumos
-* [ ] Identificação de decisões
-* [ ] Extração de tarefas
-* [ ] Identificação de responsáveis
-* [ ] Fluxo de revisão das informações
-* [ ] Criação de GitHub Issues
+* [x] Processamento da transcrição
+* [x] Geração estruturada de resumos
+* [x] Identificação de decisões
+* [x] Extração de tarefas
+* [x] Identificação de responsáveis
+* [x] Fluxo de revisão das informações
+* [x] Criação de GitHub Issues
 * [ ] Dashboard para visualização dos resultados
 * [ ] Escrever o TCC...
 
-### Trabalhos futuros
+> O processamento dos áudios utiliza o Whisper. Enquanto a geração estruturada de resumos e a identificação de decisões usam Groq ou Ollama quando `LLM_SUMMARIZATION_ENABLED=true`.
+
+### Trabalhos futuros para a versão v2
 
 Algumas funcionalidades poderão ser investigadas posteriormente (depois da apresentaçåo do TCC):
 

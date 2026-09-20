@@ -51,3 +51,13 @@ class IssueTaskConfig(BaseModel):
 class CreateIssuesBatchRequest(BaseModel):
     file_id: Optional[str] = Field(default=None, description="Se informado, atualiza o registro com as issues criadas")
     tasks: List[IssueTaskConfig] = Field(min_length=1)
+
+
+class ReviewTaskSpec(BaseModel):
+    title: str = Field(min_length=1)
+    body: str = ""
+    assignees: List[str] = Field(default_factory=list)
+
+
+class ReviewRequest(BaseModel):
+    tasks: List[ReviewTaskSpec] = Field(min_length=1)

@@ -38,6 +38,13 @@ async def list_github_repos(
         raise HTTPException(status_code=401, detail="github_access_token missing in JWT")
 
     gh = GithubService(access_token=github_access_token)
+
+    if req.file_id:
+        record = get_record(req.file_id)
+        if record is None or record.get("user_github_login") != auth.get("github_login", ""):
+            raise HTTPException(status_code=404, detail="Record not found")
+        if record.get("status") != "reviewed":
+            raise HTTPException(status_code=409, detail="Review the tasks before creating issues")
     try:
         repos = gh.list_user_repos()
         return {"repos": repos}
@@ -87,7 +94,7 @@ async def create_issues_batch(
             all_issues = existing_issues + created_issues
             update_record_status(
                 req.file_id,
-                status=record.get("status", "processed"),
+                status="reviewed",
                 created_issues=all_issues,
             )
 

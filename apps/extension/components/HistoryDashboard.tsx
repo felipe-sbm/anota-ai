@@ -115,14 +115,14 @@ export default function HistoryDashboard({ onViewDetail, onRecordsLoaded }: Prop
 
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
-      uploaded: "Enviado", processing: "Processando...", processed: "Processado", error: "Erro",
+      uploaded: "Enviado", processing: "Processando...", pending_review: "Aguardando revisão", reviewed: "Revisado", processed: "Processado", error: "Erro",
     }
     return map[status] || status
   }
 
   const getStatusClass = (status: string) => {
     const map: Record<string, string> = {
-      uploaded: "status-uploaded", processing: "status-processing", processed: "status-processed", error: "status-error",
+      uploaded: "status-uploaded", processing: "status-processing", pending_review: "status-processing", reviewed: "status-processed", processed: "status-processed", error: "status-error",
     }
     return map[status] || ""
   }

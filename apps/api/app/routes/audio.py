@@ -7,7 +7,8 @@ import uuid
 from fastapi import APIRouter, Depends, Header, UploadFile, File, HTTPException
 
 from ..core.security import verify_jwt
-from ..models.database import insert_record, get_record, list_records, count_records
+from ..models.database import insert_record, get_record, list_records, count_records, update_record_status
+from ..models.schemas import ReviewRequest
 
 
 app_router = APIRouter(prefix="/api/audio", tags=["audio"])
@@ -111,4 +112,23 @@ async def get_audio_record(
         raise HTTPException(status_code=404, detail="Record not found")
 
     return {"record": record}
+
+
+@app_router.post("/records/{file_id}/review")
+
+async def review_audio_record(
+    file_id: str,
+    req: ReviewRequest,
+    auth=Depends(require_auth),
+):
+    record = get_record(file_id)
+
+    if record is None or record.get("user_github_login") != auth.get("github_login", ""):
+        raise HTTPException(status_code=404, detail="Record not found")
+    if record.get("status") not in {"pending_review", "reviewed"}:
+        raise HTTPException(status_code=409, detail="Record is not ready for review")
+
+    tasks = [task.model_dump() for task in req.tasks]
+    update_record_status(file_id, "reviewed", tasks=tasks)
+    return {"file_id": file_id, "status": "reviewed", "tasks": tasks}
 

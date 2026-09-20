@@ -8,7 +8,6 @@ from ..services.summarization_service import summarize_and_extract
 from ..services.mention_service import resolve_assignees_from_transcript
 
 
-from ..services.github_service import GithubService
 from ..core.security import verify_jwt
 from ..core.config import settings
 
@@ -85,34 +84,11 @@ async def process_audio(
 
     created_issues = []
 
-    # cria Issues no GitHub apenas se repo_full_name foi informado
-    if req.repo_full_name:
-        github_token = auth.get("github_access_token")
-        if not github_token:
-            if req.file_id:
-                update_record_status(req.file_id, "error", error_message="github_access_token missing in JWT")
-            raise HTTPException(status_code=401, detail="github_access_token missing in JWT")
-
-        gh = GithubService(access_token=github_token)
-
-        tasks_as_dict = [t.model_dump() for t in summarized.tasks]
-
-        try:
-            created_issues = gh.create_issues(
-                repo_full_name=req.repo_full_name,
-                tasks=tasks_as_dict,
-                assignees=req.assignees,
-            )
-        except Exception as e:
-            if req.file_id:
-                update_record_status(req.file_id, "error", error_message=str(e))
-            raise HTTPException(status_code=500, detail=f"GitHub issue creation failed: {str(e)}")
-
     # Atualiza registro no banco com sucesso
     if req.file_id:
         update_record_status(
             req.file_id,
-            "processed",
+            "pending_review",
             transcript=transcript,
             summary=summarized.summary,
             tasks=[t.model_dump() for t in summarized.tasks],

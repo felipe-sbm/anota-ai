@@ -131,6 +131,8 @@ export default function RecordingDetail({ record, onBack }: Props) {
 
         if (
           data.record.status === "processed" ||
+          data.record.status === "pending_review" ||
+          data.record.status === "reviewed" ||
           data.record.status === "error"
         ) {
           break
@@ -233,6 +235,28 @@ export default function RecordingDetail({ record, onBack }: Props) {
         }))
       }
 
+      const reviewResponse = await fetch(
+        `${API_BASE}/api/audio/records/${detail.file_id}/review`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            tasks: taskConfigs.map((task) => ({
+              title: task.title,
+              body: task.body,
+              assignees: task.assignee ? [task.assignee] : []
+            }))
+          })
+        }
+      )
+      if (!reviewResponse.ok) {
+        const reviewError = await reviewResponse.json().catch(() => null)
+        throw new Error(reviewError?.detail || "Falha ao salvar a revisão")
+      }
+
       const response = await fetch(`${API_BASE}/api/issues/batch`, {
         method: "POST",
         headers: {
@@ -309,6 +333,11 @@ export default function RecordingDetail({ record, onBack }: Props) {
       },
       processing: { label: "Processando...", className: "badge-processing" },
       processed: { label: "Processado", className: "badge-processed" },
+      pending_review: {
+        label: "Aguardando revisão",
+        className: "badge-processing"
+      },
+      reviewed: { label: "Revisado", className: "badge-processed" },
       error: { label: "Erro", className: "badge-error" }
     }
     return map[status] || { label: status, className: "" }
@@ -357,7 +386,9 @@ export default function RecordingDetail({ record, onBack }: Props) {
         </div>
       )}
 
-      {detail.status === "processed" && (
+      {(detail.status === "processed" ||
+        detail.status === "pending_review" ||
+        detail.status === "reviewed") && (
         <div className="detail-content">
           {detail.transcript && (
             <section className="detail-section">
