@@ -4,7 +4,7 @@ import { Header } from "@/components/header";
 import Image from "next/image";
 
 import type { ComponentType } from "react";
-import { ArrowRight, CheckCircle2, Mic, Zap } from "lucide-react";
+import { CheckCircle2, Mic, Zap } from "lucide-react";
 import {
   ChromeIcon,
   FirefoxIcon,

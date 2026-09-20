@@ -7,5 +7,10 @@ services:
     ports:
       - "8000:8000"
 
+    # Carrega GROQ_API_KEY e as demais configurações também quando não houver
+    # volume local (por exemplo, em um container de execução).
+    env_file:
+      - ./apps/api/.env
+
     volumes:
       - ./apps/api:/app

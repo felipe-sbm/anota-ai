@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { AuthProvider } from "@/lib/auth";
 import "./globals.scss";
 
 const geist = Geist({
@@ -8,7 +9,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Anota Aí - Você vai baixar agora, não é?",
+  title: "Anota Aí - a sua IA para automatizar reuniões",
   description:
     "Transforme reuniões de desenvolvimento em resumos estruturados e tarefas no GitHub.",
 };
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geist.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-ink">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

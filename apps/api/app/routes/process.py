@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec
 from ..models.database import update_record_status
-from ..services.whisper_service import transcribe_file
 from ..services.summarization_service import summarize_and_extract
 from ..services.mention_service import resolve_assignees_from_transcript
 
@@ -56,8 +55,10 @@ async def process_audio(
     if req.file_id:
         update_record_status(req.file_id, "processing")
 
-    # whisper local
+    # whisper local (é umimport tardio - o servidor não depende de torch/whisper no startup)
     try:
+        from ..services.whisper_service import transcribe_file
+
         transcript = transcribe_file(file_path, model_size=settings.WHISPER_MODEL_SIZE)
     except Exception as e:
         if req.file_id:

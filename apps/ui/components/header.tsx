@@ -1,9 +1,13 @@
 import { Search } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 // Depois irei colocar links funcionais de verdade, por enquanto será só mock
 const docsLinks = ["Documentação", "Suporte", "Ver Demonstração"];
-const accountLinks = ["Como usar o GitHub Issues", "Entrar"];
+const accountLinks: { label: string; href: string | null }[] = [
+  { label: "Como usar o GitHub Issues", href: null },
+  { label: "Entrar", href: "/login" },
+];
 const navLinks = ["Como Funciona", "Recursos", "Documentação", "Sobre o TCC"];
 
 export function Header() {
@@ -25,14 +29,24 @@ export function Header() {
             </a>
           ))}
           <span className="text-gray-300">|</span>
-          {accountLinks.map((label) => (
-            <a
-              key={label}
-              className="cursor-pointer font-normal text-gray-700 transition-colors hover:text-brand"
-            >
-              {label}
-            </a>
-          ))}
+          {accountLinks.map((link) =>
+            link.href ? (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="cursor-pointer font-normal text-gray-700 transition-colors hover:text-brand"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                className="cursor-pointer font-normal text-gray-700 transition-colors hover:text-brand"
+              >
+                {link.label}
+              </a>
+            ),
+          )}
         </div>
       </div>
 

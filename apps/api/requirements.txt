@@ -26,6 +26,9 @@ alembic
 python-jose[cryptography]
 passlib[bcrypt]
 
+# Backport de anotações `X | None` (Python 3.9 + pydantic v2)
+eval_type_backport
+
 # Upload de arquivos
 python-multipart
 

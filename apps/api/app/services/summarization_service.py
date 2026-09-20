@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import json
+import logging
+import re
 from typing import Any, Dict, List
 
+import httpx
 from pydantic import BaseModel
 
+from ..core.config import settings
 
-# obs: o resumo pode ser determinístico (fallback) ou via Ollama.
+logger = logging.getLogger(__name__)
+
+# obs: o resumo pode ser determinístico (fallback) ou via LLM (que o groq eh o padrão).
 
 
 class TaskOut(BaseModel):
@@ -54,39 +61,106 @@ TRANSCRIÇÃO:
 """.strip()
 
 
+def _parse_json(content: str) -> Dict[str, Any]:
+    """pega o primeiro objeto JSON válido da resposta da IA"""
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        match = re.search(r"\{[\s\S]*\}", content)
+        if not match:
+            raise ValueError(f"A resposta não contém JSON válido: {content[:200]}")
+        return json.loads(match.group(0))
+
+
+def _groq_api_key() -> str:
+    """retorna a chave do groq"""
+    return settings.GROQ_API_KEY
+
+
+async def _groq_chat_json(prompt: str) -> Dict[str, Any]:
+    """chama o endpoint compatível com OpenAI do Groq pedindo JSON estrito.
+
+    Precisa da chave do Groq no .env (pegue pelo https://console.groq.com).
+    """
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {_groq_api_key()}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": settings.GROQ_MODEL,
+        "temperature": 0.2,
+        "max_tokens": 2048,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Você é um assistente que recebe uma transcrição de reunião "
+                    "e responde SEMPRE com um único objeto JSON válido."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+    }
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        r = await client.post(url, headers=headers, json=payload)
+
+    r.raise_for_status()
+
+    data = r.json()
+    content = data["choices"][0]["message"]["content"]
+    return _parse_json(content)
+
+
 async def summarize_and_extract(
     transcript: str,
     assignees: List[str],
     *,
-    ollama_base_url: str,
-    ollama_model: str,
-    llm_enabled: bool,
+    ollama_base_url: str = "",
+    ollama_model: str = "",
+    llm_enabled: bool = False,
 ) -> SummaryTasksOut:
     """Resumir e extrair tasks.
 
-    - Se llm_enabled: tenta Ollama e parseia JSON estrito.
-    - Se falhar: fallback determinístico.
+    Ordem de tentativa:
+    1. api do groq, se `GROQ_API_KEY` estiver configurado no .env;
+    2. Ollama (local, que agora é legado), se configurado;
+    3. Fallback determinístico, para nunca quebrar o fluxo.
     """
 
     if not transcript.strip():
         return SummaryTasksOut(summary="", tasks=[])
 
     if llm_enabled:
-        try:
-            from .ollama_service import chat_json
+        if _groq_api_key():
+            try:
+                prompt = build_prompt(transcript=transcript, assignees=assignees)
+                payload = await _groq_chat_json(prompt)
+                return SummaryTasksOut(**payload)
+            except Exception:
+                # mantém o fluxo de processamento disponível, mas não esconde
+                # erros de autenticação, limite, rede ou resposta inválida.
+                logger.exception("Falha ao gerar resumo com a API da Groq; usando fallback local")
+                pass
+        else:
+            # ollama local (caso um dia esteja disponível).
+            try:
+                from .ollama_service import chat_json
 
-            prompt = build_prompt(transcript=transcript, assignees=assignees)
-            payload = await chat_json(
-                prompt=prompt,
-                base_url=ollama_base_url,
-                model=ollama_model,
-            )
-            return SummaryTasksOut(**payload)
-        except Exception:
-            # fallback silencioso
-            pass
+                prompt = build_prompt(transcript=transcript, assignees=assignees)
+                payload = await chat_json(
+                    prompt=prompt,
+                    base_url=ollama_base_url,
+                    model=ollama_model,
+                )
+                return SummaryTasksOut(**payload)
+            except Exception:
+                logger.exception("Falha ao gerar resumo com Ollama; usando fallback local")
+                pass
 
-    # fallback determinístico (bom o suficiente para não quebrar o fluxo)
+    # fallback (bom o suficiente para não quebrar o fluxo ;])
     sentences = [s.strip() for s in transcript.replace("\n", " ").split(".") if s.strip()]
     summary = ". ".join(sentences[:3]).strip()
 
@@ -122,4 +196,3 @@ async def summarize_and_extract(
         )
 
     return SummaryTasksOut(summary=summary, tasks=tasks)
-

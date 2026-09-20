@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/node_modules
+**/dist
+**/build
+apps/api/uploads
+apps/api/*.db
