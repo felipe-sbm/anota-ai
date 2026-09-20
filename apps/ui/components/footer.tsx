@@ -73,10 +73,10 @@ const socialLinks: {
 function FooterColumn({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <h4 className="mb-4 text-sm font-semibold tracking-tight text-gray-900">
+      <h4 className="mb-4 text-sm font-semibold tracking-tight text-stone-900">
         {title}
       </h4>
-      <ul className="space-y-3 text-[13px] text-gray-600">
+      <ul className="space-y-3 text-[13px] text-stone-600">
         {links.map((label) => (
           <li key={label}>
             <a className="cursor-pointer transition-colors hover:text-black">
@@ -91,7 +91,7 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-gray-200 bg-white pb-12 pt-16 text-gray-700">
+    <footer className="relative border-t border-stone-200 bg-white pb-12 pt-16 text-stone-700">
       <div className="mx-auto max-w-[1360px] px-6">
         <div className="mb-14 grid grid-cols-2 gap-8 md:grid-cols-5 lg:gap-12">
           <FooterColumn title="Produtos & Soluções" links={productLinks} />
@@ -99,10 +99,10 @@ export function Footer() {
           <FooterColumn title="Sobre o Projeto" links={aboutLinks} />
           <FooterColumn title="Contato" links={contactLinks} />
           <div>
-            <h4 className="mb-4 text-sm font-semibold tracking-tight text-gray-900">
+            <h4 className="mb-4 text-sm font-semibold tracking-tight text-stone-900">
               Compartilhe o projeto!
             </h4>
-            <div className="flex items-center gap-4 text-gray-700">
+            <div className="flex items-center gap-4 text-stone-700">
               {socialLinks.map(({ label, href, Icon }) => (
                 <a
                   key={label}
@@ -119,12 +119,12 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-between gap-6 border-t border-gray-100 pt-8 text-xs text-gray-500 lg:flex-row">
+        <div className="flex flex-col items-center justify-between gap-6 border-t border-stone-100 pt-8 text-xs text-stone-500 lg:flex-row">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {legalLinks.map((label) => (
               <a
                 key={label}
-                className="cursor-pointer transition-colors hover:text-gray-900"
+                className="cursor-pointer transition-colors hover:text-stone-900"
               >
                 {label}
               </a>
@@ -140,7 +140,7 @@ export function Footer() {
             />
           </div>
         </div>
-        <p className="pt-4 text-left text-xs text-gray-400">
+        <p className="pt-4 text-left text-xs text-stone-400">
           © 2026 Anota Aí. Todos os direitos reservados.
         </p>
       </div>

@@ -1,6 +1,6 @@
 {
   "name": "anota-ai",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "private": true,
   "scripts": {
     "dev": "next dev",

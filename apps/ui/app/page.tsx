@@ -70,18 +70,18 @@ export default function Home() {
             <h1 className="mb-4 text-4xl tracking-tight sm:text-5xl">
               O Tal do <span className="font-extrabold">Anota Aí</span>
             </h1>
-            <p className="mx-auto max-w-2xl text-lg font-normal text-gray-300 sm:text-xl">
+            <p className="mx-auto max-w-2xl text-lg font-normal text-stone-300 sm:text-xl">
               Transforme reuniões de desenvolvimento em resumos estruturados e
               tarefas no GitHub.
             </p>
           </div>
         </section>
 
-        <section className="border-b border-gray-100 bg-white py-16 md:py-24">
+        <section className="border-b border-stone-100 bg-white py-16 md:py-24">
           <div className="mx-auto max-w-[1360px] px-6">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
               <div className="lg:col-span-6">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-gray-100 bg-gray-50 shadow-xl">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-stone-100 bg-stone-50 shadow-xl">
                   <Image
                     src="/pexels-cottonbro-5486096.webp"
                     alt="Equipe de software em reunião de sprint"
@@ -92,13 +92,13 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex flex-col justify-center lg:col-span-6">
-                <h2 className="mb-5 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                <h2 className="mb-5 text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
                   Anota Aí para Equipes de Software
                 </h2>
                 <p className="mb-2 text-base font-semibold font-mono text-brand">
-                  Versão 0.0.12 (Extensão de Navegador)
+                  Versão 0.0.14 (Extensão de Navegador)
                 </p>
-                <p className="mb-8 text-base leading-relaxed text-gray-600 sm:text-lg">
+                <p className="mb-8 text-base leading-relaxed text-stone-600 sm:text-lg">
                   O Anota Aí utiliza inteligência artificial para capturar o
                   áudio das reuniões, gerar transcrições e organizar decisões,
                   resumos e tarefas automaticamente antes do envio ao GitHub.
@@ -121,10 +121,10 @@ export default function Home() {
           <div className="mx-auto max-w-[1360px] px-6">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
               <div className="lg:col-span-6">
-                <h2 className="mb-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                <h2 className="mb-4 text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
                   Fluxo Simples: Da Reunião ao GitHub
                 </h2>
-                <p className="mb-8 text-base leading-relaxed text-gray-600 sm:text-lg">
+                <p className="mb-8 text-base leading-relaxed text-stone-600 sm:text-lg">
                   Ative a extensão com dois cliques durante sua <i>Daily</i>. A
                   inteligência artificial resume os pontos-chave e você apenas
                   revisa as tarefas sugeridas antes de criar as issues.
@@ -136,7 +136,7 @@ export default function Home() {
                   >
                     <ChromeIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
-                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-gray-300">
+                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-stone-300">
                         Disponível na
                       </span>
                       <span className="block text-xs font-bold">
@@ -150,7 +150,7 @@ export default function Home() {
                   >
                     <FirefoxIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
-                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-gray-300">
+                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-stone-300">
                         Compatível com
                       </span>
                       <span className="block text-xs font-bold">
@@ -164,7 +164,7 @@ export default function Home() {
                   >
                     <EdgeIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
-                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-gray-300">
+                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-stone-300">
                         Preparado para
                       </span>
                       <span className="block text-xs font-bold">
@@ -191,7 +191,7 @@ export default function Home() {
 
         <section id="vantagens" className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-[1360px] px-6">
-            <h2 className="mb-10 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            <h2 className="mb-10 text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
               Vantagens e Componentes do Sistema
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -206,7 +206,7 @@ export default function Home() {
                 }) => (
                   <div
                     key={title}
-                    className="flex flex-col justify-between rounded-3xl border border-gray-200/90 bg-white p-7 transition-shadow hover:shadow-lg"
+                    className="flex flex-col justify-between rounded-3xl border border-stone-200/90 bg-white p-7 transition-shadow hover:shadow-lg"
                   >
                     <div>
                       <div
@@ -214,10 +214,10 @@ export default function Home() {
                       >
                         <Icon className="h-6 w-6" />
                       </div>
-                      <h3 className="mb-2 text-lg font-bold text-gray-900">
+                      <h3 className="mb-2 text-lg font-bold text-stone-900">
                         {title}
                       </h3>
-                      <p className="mb-6 text-sm leading-relaxed text-gray-600">
+                      <p className="mb-6 text-sm leading-relaxed text-stone-600">
                         {description}
                       </p>
                     </div>
@@ -235,12 +235,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-t border-gray-100 bg-white py-24 text-center">
+        <section className="border-t border-stone-100 bg-white py-24 text-center">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="mb-3 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            <h2 className="mb-3 text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
               Quer contribuir com o desenvolvimento do projeto?
             </h2>
-            <p className="mb-8 text-base text-gray-600 sm:text-lg">
+            <p className="mb-8 text-base text-stone-600 sm:text-lg">
               Acesse o repositório no GitHub ou consulte a documentação técnica.
             </p>
             <div>
