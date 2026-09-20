@@ -1,4 +1,9 @@
 {
     "js/ts.experimental.useTsgo": false,
-    "compilets.autoStart": true
+    "compilets.autoStart": true,
+    "python.defaultInterpreterPath": "${workspaceFolder}/apps/api/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/apps/api"
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

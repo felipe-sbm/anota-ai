@@ -18,10 +18,16 @@ class TaskSpec(BaseModel):
     assignees: List[str] = Field(default_factory=list)
 
 
+class DecisionSpec(BaseModel):
+    title: str
+    context: str = ""
+
+
 class ProcessAudioResponse(BaseModel):
     transcript: str
     summary: str
     tasks: List[TaskSpec]
+    decisions: List[DecisionSpec] = Field(default_factory=list)
     created_issues: List[Dict[str, Any]] = Field(default_factory=list)
 
 

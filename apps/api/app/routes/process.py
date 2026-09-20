@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from fastapi import APIRouter, Depends, Header, HTTPException
 
-from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec
+from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec, DecisionSpec
 from ..models.database import update_record_status
 from ..services.summarization_service import summarize_and_extract
 from ..services.mention_service import resolve_assignees_from_transcript
@@ -116,6 +116,7 @@ async def process_audio(
             transcript=transcript,
             summary=summarized.summary,
             tasks=[t.model_dump() for t in summarized.tasks],
+            decisions=[decision.model_dump() for decision in summarized.decisions],
             created_issues=created_issues,
             repo_full_name=req.repo_full_name or "",
         )
@@ -124,6 +125,6 @@ async def process_audio(
         transcript=transcript,
         summary=summarized.summary,
         tasks=[TaskSpec(**t.model_dump()) for t in summarized.tasks],
+        decisions=[DecisionSpec(**decision.model_dump()) for decision in summarized.decisions],
         created_issues=created_issues,
     )
-

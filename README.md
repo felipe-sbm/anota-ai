@@ -1,6 +1,12 @@
 # Anota aí
 
+![Logo do Anota aí](/apps/extension/assets/logo.png)
+
+## Sobre o projeto
+
 Anota aí é uma aplicação de anotações que utiliza inteligência artificial para facilitar a organização e o acesso às tarefas de equipes de desenvolvimento. O projeto é dividido em três partes principais: ui, api e ia.
+
+## Estrutura
 
 Esta é a estrutura do projeto:
 
@@ -16,17 +22,28 @@ sprint-notes-ai/
 │   │   ├── package.json
 │   │   └── ...
 │   │
-│   └── api/                # FastAPI
+│   ├── api/                # FastAPI
+│   │   ├── app/
+│   │   │   ├── main.py
+│   │   │   ├── routes/
+│   │   │   ├── services/
+│   │   │   ├── models/
+│   │   │   ├── ai/
+│   │   │   └── utils/
+│   │   │
+│   │   ├── requirements.txt
+│   │   └── pyproject.toml
+│   │
+│   └── ui/                 # Next
 │       ├── app/
-│       │   ├── main.py
-│       │   ├── routes/
-│       │   ├── services/
-│       │   ├── models/
-│       │   ├── ai/
-│       │   └── utils/
-│       │
-│       ├── requirements.txt
-│       └── pyproject.toml
+│       │   ├── page.tsx
+│       │   ├── layout.tsx
+│       │   ├── globals.scss
+│       │   ├── login/
+│       │   └── dashboard/
+│       ├── components/
+│       ├── public/
+│       └── lib/
 │
 ├── packages/
 │   │
@@ -54,6 +71,8 @@ sprint-notes-ai/
 └── .gitignore
 ```
 
+## Como iniciar
+
 Como iniciar o projeto:
 
 1. Clone o repositório:
@@ -78,6 +97,8 @@ Como iniciar o projeto:
     uvicorn app.main:app --reload
     ```
 
+    A API estará rodando localmente em `http://localhost:8000`.
+
 3. Inicie a extensão:
 
     ```bash
@@ -88,4 +109,58 @@ Como iniciar o projeto:
     npm run dev
     ```
 
-A extensão estará disponível no navegador para ser testada. A API estará rodando localmente em `http://localhost:8000`.
+    A extensão estará disponível no navegador para ser testada.
+
+4. Inicie o painel de trabalho:
+
+    ```bash
+    cd apps/ui
+
+    npm install
+
+    npm run dev
+    ```
+
+    A dashboard fica no `http://localhost:3000` para poder ser acessada e testada.
+
+## 🚧 Estado do projeto
+
+O projeto está em desenvolvimento (🚧), com previsão para terminar em outubro.
+
+### Implementado (versão v0)
+
+* [x] Estrutura inicial do projeto
+* [x] Extensão de navegador utilizando Plasmo
+* [x] Interface inicial da extensão
+* [x] Captura de áudio
+* [x] Comunicação com a API
+* [x] Autenticação com GitHub
+* [x] Estrutura inicial da API
+* [x] Organização em monorepo
+* [x] Tipos compartilhados
+* [x] Documentação inicial
+
+### Desenvolvimento da versão v1
+
+* [x] Página inicial e apresentação do produto
+* [x] Pipeline principal utilizando LangGraph
+* [ ] Processamento da transcrição
+* [ ] Geração estruturada de resumos
+* [ ] Identificação de decisões
+* [ ] Extração de tarefas
+* [ ] Identificação de responsáveis
+* [ ] Fluxo de revisão das informações
+* [ ] Criação de GitHub Issues
+* [ ] Dashboard para visualização dos resultados
+* [ ] Escrever o TCC...
+
+### Trabalhos futuros
+
+Algumas funcionalidades poderão ser investigadas posteriormente (depois da apresentaçåo do TCC):
+
+* [ ] Identificação automática dos participantes da reunião
+* [ ] Diarização de áudio
+* [ ] Integração com outras plataformas de gerenciamento de projetos (talvez, bem talvez mesmo)
+* [ ] Recursos relacionados a Scrum
+* [ ] Métricas e acompanhamento do trabalho
+* [ ] Suporte aprimorado a diferentes navegadores (como o safari)

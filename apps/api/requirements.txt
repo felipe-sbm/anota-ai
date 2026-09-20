@@ -12,6 +12,7 @@ ffmpeg-python
 # Sumarização / IA
 langchain
 langchain-openai
+langgraph
 tiktoken
 
 # GitHub

@@ -33,12 +33,18 @@ def init_db():
             transcript      TEXT,
             summary         TEXT,
             tasks           TEXT,
+            decisions       TEXT,
             created_issues  TEXT,
             repo_full_name  TEXT DEFAULT '',
             error_message   TEXT
         )
         """
     )
+
+    # adiciona a coluna para bancos criados antes do fluxo de decisões
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(audio_records)")}
+    if "decisions" not in columns:
+        conn.execute("ALTER TABLE audio_records ADD COLUMN decisions TEXT")
 
     conn.execute(
         """
@@ -107,6 +113,7 @@ def update_record_status(record_id: str, status: str, **kwargs):
         "transcript",
         "summary",
         "tasks",
+        "decisions",
         "created_issues",
         "error_message",
         "status",
@@ -170,7 +177,7 @@ def count_records(user_github_login: str) -> int:
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
-    for field in ("tasks", "created_issues"):
+    for field in ("tasks", "decisions", "created_issues"):
         if isinstance(d.get(field), str):
             try:
                 d[field] = json.loads(d[field])
@@ -289,4 +296,3 @@ def get_user_aliases() -> Dict[str, str]:
             continue
         out[norm(a)] = r["github_login"]
     return out
-

@@ -20,5 +20,6 @@ def transcribe_file(file_path: str, model_size: str = "base") -> str:
 
     model = get_model(model_size)
     result = model.transcribe(file_path)
-    return result.get("text", "").strip()
-
+    
+    text = result.get("text", "")
+    return text.strip() if isinstance(text, str) else ""
