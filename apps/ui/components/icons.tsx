@@ -2,7 +2,7 @@ import type { SVGProps } from "react";
 import Image from "next/image";
 
 export type SVG_IconProps = SVGProps<SVGSVGElement>;
-export type ClassNameProps = { className?: string; }
+export type ClassNameProps = { className?: string };
 
 // GitHub
 export function GithubIcon(props: SVG_IconProps) {
@@ -21,7 +21,7 @@ export function GithubIcon(props: SVG_IconProps) {
 export function ChromeIcon({ className }: ClassNameProps) {
   return (
     <Image
-      src="/icons/chrome.webp"
+      src="/icons/web/chrome.webp"
       alt="Logotipo do Google Chrome"
       className={className}
       height={60}
@@ -33,7 +33,7 @@ export function ChromeIcon({ className }: ClassNameProps) {
 export function EdgeIcon({ className }: ClassNameProps) {
   return (
     <Image
-      src="/icons/edge.webp"
+      src="/icons/web/edge.webp"
       alt="Logotipo do Microsoft Edge"
       className={className}
       height={60}
@@ -45,7 +45,7 @@ export function EdgeIcon({ className }: ClassNameProps) {
 export function FirefoxIcon({ className }: ClassNameProps) {
   return (
     <Image
-      src="/icons/firefox.webp"
+      src="/icons/web/firefox.webp"
       alt="Logotipo do Mozilla Firefox"
       className={className}
       height={60}

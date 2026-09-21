@@ -16,8 +16,6 @@ type Feature = {
   title: string;
   description: string;
   tag: string;
-  tagClassName: string;
-  iconContainerClassName: string;
   Icon: ComponentType<{ className?: string }>;
 };
 
@@ -27,8 +25,6 @@ const features: Feature[] = [
     description:
       "Gravação leve na aba do seu navegador com processamento veloz de transcrição por IA. Ele tenta transcrever até audio abafado!",
     tag: "Extensão para navegadores",
-    tagClassName: "text-brand bg-brand-light",
-    iconContainerClassName: "bg-purple-100 text-brand",
     Icon: Mic,
   },
   {
@@ -36,8 +32,6 @@ const features: Feature[] = [
     description:
       "Algorítimo que divide o áudio em tópicos, identifica decisões técnicas e sugere os membros responsáveis.",
     tag: "Usando LangChain",
-    tagClassName: "text-brand bg-brand-light",
-    iconContainerClassName: "bg-purple-100 text-brand",
     Icon: Zap,
   },
   {
@@ -45,8 +39,6 @@ const features: Feature[] = [
     description:
       "Nenhuma issue é enviada sem seu aval: revise, edite, ajuste responsáveis e aprove cada item de forma individual.",
     tag: "Tipo uma revisão interativa",
-    tagClassName: "text-brand bg-brand-light",
-    iconContainerClassName: "bg-purple-100 text-brand",
     Icon: CheckCircle2,
   },
   {
@@ -54,8 +46,6 @@ const features: Feature[] = [
     description:
       "Publicação direta no repositório escolhido com labels, markdown padronizado e referências às decisões tomadas.",
     tag: "Feito para o GitHub",
-    tagClassName: "text-brand bg-brand-light",
-    iconContainerClassName: "bg-purple-100 text-brand",
     Icon: GithubIcon,
   },
 ];
@@ -95,7 +85,7 @@ export default function Home() {
                 <h2 className="mb-5 text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
                   Anota Aí para Equipes de Software
                 </h2>
-                <p className="mb-2 text-base font-semibold font-mono text-brand">
+                <p className="mb-2 text-base font-medium font-mono text-brand">
                   Versão 0.0.14 (Extensão de Navegador)
                 </p>
                 <p className="mb-8 text-base leading-relaxed text-stone-600 sm:text-lg">
@@ -104,7 +94,7 @@ export default function Home() {
                   resumos e tarefas automaticamente antes do envio ao GitHub.
                 </p>
                 <div className="flex flex-wrap items-center gap-4">
-                  <a className="inline-flex cursor-pointer items-center rounded-full bg-brand px-7 py-3 text-[15px] font-semibold text-white shadow-sm transition-all hover:bg-brand-hover">
+                  <a className="inline-flex cursor-pointer items-center rounded-full bg-brand px-7 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-brand-hover">
                     Acessar Dashboard da equipe
                     {/** redireciona para a pagina do navegador que o usuário está usando :) */}
                   </a>
@@ -136,7 +126,7 @@ export default function Home() {
                   >
                     <ChromeIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
-                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-stone-300">
+                      <span className="block text-[9px] font-medium uppercase tracking-wider text-stone-300">
                         Disponível na
                       </span>
                       <span className="block text-xs font-bold">
@@ -150,7 +140,7 @@ export default function Home() {
                   >
                     <FirefoxIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
-                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-stone-300">
+                      <span className="block text-[9px] font-medium uppercase tracking-wider text-stone-300">
                         Compatível com
                       </span>
                       <span className="block text-xs font-bold">
@@ -164,7 +154,7 @@ export default function Home() {
                   >
                     <EdgeIcon className={"mr-3 h-6 w-6"} />
                     <span className="text-left">
-                      <span className="block text-[9px] font-semibold uppercase tracking-wider text-stone-300">
+                      <span className="block text-[9px] font-medium uppercase tracking-wider text-stone-300">
                         Preparado para
                       </span>
                       <span className="block text-xs font-bold">
@@ -195,42 +185,29 @@ export default function Home() {
               Vantagens e Componentes do Sistema
             </h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map(
-                ({
-                  title,
-                  description,
-                  tag,
-                  tagClassName,
-                  iconContainerClassName,
-                  Icon,
-                }) => (
-                  <div
-                    key={title}
-                    className="flex flex-col justify-between rounded-3xl border border-stone-200/90 bg-white p-7 transition-shadow hover:shadow-lg"
-                  >
-                    <div>
-                      <div
-                        className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${iconContainerClassName}`}
-                      >
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <h3 className="mb-2 text-lg font-bold text-stone-900">
-                        {title}
-                      </h3>
-                      <p className="mb-6 text-sm leading-relaxed text-stone-600">
-                        {description}
-                      </p>
+              {features.map(({ title, description, tag, Icon }) => (
+                <div
+                  key={title}
+                  className="flex flex-col justify-between rounded-3xl border border-stone-200/90 bg-white p-7 transition-shadow hover:shadow-lg"
+                >
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl text-brand bg-brand-light">
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <div>
-                      <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${tagClassName}`}
-                      >
-                        {tag}
-                      </span>
-                    </div>
+                    <h3 className="mb-2 text-lg font-bold text-stone-900">
+                      {title}
+                    </h3>
+                    <p className="mb-6 text-sm leading-relaxed text-stone-600">
+                      {description}
+                    </p>
                   </div>
-                ),
-              )}
+                  <div>
+                    <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-brand bg-brand-light">
+                      {tag}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -245,7 +222,7 @@ export default function Home() {
             </p>
             <div>
               <a
-                className="group inline-flex cursor-pointer items-center text-lg font-semibold text-brand transition-colors hover:text-brand-hover"
+                className="group inline-flex cursor-pointer items-center text-lg font-medium text-brand transition-colors hover:text-brand-hover"
                 href="http://github.com/felipe-sbm/anota-ai"
               >
                 <span>Acessar agora! 🤩</span>

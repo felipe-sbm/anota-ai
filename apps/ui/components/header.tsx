@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+
+import Image from "next/image";
 
 // Depois irei colocar links funcionais de verdade, por enquanto será só mock
 const docsLinks = ["Documentação", "Suporte", "Ver Demonstração"];
@@ -55,8 +56,8 @@ export function Header() {
         <div className="flex items-center gap-10">
           <a className="cursor-pointer">
             <Image
-              src="/logo.webp"
-              alt="Logotipo do Anota Aí!"
+              src="/icons/theme/logo.webp"
+              alt="Logo"
               width={150}
               height={50}
               className="h-12 w-auto"
@@ -75,12 +76,15 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4">
           <a
-            className="hidden cursor-pointer rounded-full border border-brand px-5 py-2.5 text-sm font-semibold text-brand transition-all hover:bg-brand-light sm:inline-flex"
+            className="hidden cursor-pointer rounded-full border border-brand px-5 py-2.5 text-sm font-medium text-brand transition-all hover:bg-brand-light sm:inline-flex"
             href="http://github.com/felipe-sbm/anota-ai"
           >
             Instalar Extensão
           </a>
-          <Link href="/login" className="cursor-pointer rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-hover">
+          <Link
+            href="/login"
+            className="cursor-pointer rounded-full bg-brand px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-hover"
+          >
             Entrar no Painel
           </Link>
         </div>

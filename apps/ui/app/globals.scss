@@ -1,16 +1,35 @@
 @use "tailwindcss";
 
+:root {
+  --color-brand: #4169e1;
+  --color-brand-hover: #3557d6;
+  --color-brand-light: #f2f3ff;
+  --color-brand-navy: #050c26;
+  --color-brand-blue: #4169e1;
+  --color-mist: #ebf3fc;
+  --color-ink: #232333;
+}
+
+html[data-theme="dark"] {
+  --color-brand: #4169e1;
+  --color-brand-hover: #3557d6;
+  --color-brand-light: #1b2338;
+  --color-brand-blue: #4169e1;
+  --color-mist: #1a1f2d;
+  --color-ink: #edf2ff;
+}
+
 @theme {
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  --color-brand: #583be8;
-  --color-brand-hover: #472ec4;
-  --color-brand-light: #f4f2ff;
-  --color-brand-navy: #050c26;
-  --color-brand-blue: #2a75ff;
-  --color-mist: #ebf3fc;
-  --color-ink: #232333;
+  --color-brand: var(--color-brand);
+  --color-brand-hover: var(--color-brand-hover);
+  --color-brand-light: var(--color-brand-light);
+  --color-brand-navy: var(--color-brand-navy);
+  --color-brand-blue: var(--color-brand-blue);
+  --color-mist: var(--color-mist);
+  --color-ink: var(--color-ink);
 }
 
 body {

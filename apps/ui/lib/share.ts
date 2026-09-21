@@ -5,12 +5,12 @@
  * Ao clicar, redireciona para a plataforma, mas com o link e a descição
  * do projeto. Coloquei uns comentários aqui em baixo para entender como
  * funciona.
- * 
+ *
  * E outra coisa, estou fazendo isso porque não quero criar 450
  * redes sociais diferentes para um projeto que será apenas uma ferramenta,
  * e não um produto que será monetário, a não ser que eu cobre planos ou coloque
  * propagandas, mas sinceramente, eu não me importo muito em ganhar um din din extra.
- * 
+ *
  * #JesusIsGood
  */
 
@@ -26,7 +26,7 @@ const encode = (value: string) => encodeURIComponent(value);
 // link do projeto para compartilhar
 export const projectUrl = () => PROJECT_URL;
 
-// compartilhar no twitter 
+// compartilhar no twitter
 export const xShareUrl = () =>
   `https://twitter.com/intent/tweet?text=${encode(SHARE_TEXT)}&url=${encode(
     PROJECT_URL,

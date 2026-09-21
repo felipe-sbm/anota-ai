@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
+
+import Image from "next/image";
 import {
   AudioLines,
   CircleUser,
@@ -29,19 +30,16 @@ const navItems: NavItem[] = [
     label: "Gravações",
     href: "/dashboard/gravacoes",
     Icon: AudioLines,
-    disabled: true,
   },
   {
     label: "Equipes",
     href: "/dashboard/equipes",
     Icon: Users,
-    disabled: true,
   },
   {
     label: "Issues",
     href: "/dashboard/issues",
     Icon: FolderKanban,
-    disabled: true,
   },
   {
     label: "Configurações",
@@ -84,22 +82,23 @@ export function DashboardSidebar({
           }`}
         >
           <Link href="/" className="flex min-w-0 items-center gap-2">
-            <Image
-              src="/logo.webp"
-              alt="Logotipo do Anota Aí!"
-              width={120}
-              height={40}
-              className={`h-9 w-auto ${collapsed ? "hidden" : ""}`}
-            />
-            {collapsed ? (
+            {!collapsed ? (
               <Image
-                src="/icon.webp"
-                alt="Ícone do Anota Aí!"
+                src="/icons/theme/logo.webp"
+                alt="Logo"
+                width={120}
+                height={40}
+                className="h-9 w-auto"
+              />
+            ) : (
+              <Image
+                src="/icons/theme/icon.webp"
+                alt="Logo"
                 width={40}
                 height={40}
-                className={`h-9 w-auto ${collapsed ? "" : "hidden"}`}
+                className="h-9 w-auto"
               />
-            ) : null}
+            )}
           </Link>
           <button
             type="button"
@@ -136,11 +135,6 @@ export function DashboardSidebar({
                   >
                     {item.label}
                   </span>
-                  {!collapsed ? (
-                    <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide transition-opacity duration-200">
-                      em breve
-                    </span>
-                  ) : null}
                 </span>
               );
             }
@@ -150,11 +144,11 @@ export function DashboardSidebar({
                 key={item.href}
                 href={item.href}
                 title={collapsed ? item.label : undefined}
-                className={`flex h-8 items-center rounded-md p-2 text-sm font-medium transition-colors ${
+                className={`flex h-8 items-center rounded-md p-2 text-sm transition-colors ${
                   collapsed ? "justify-center" : "gap-2"
                 } ${
                   active
-                    ? "bg-stone-200/75 text-stone-900"
+                    ? "bg-stone-200/75 text-stone-900 font-medium"
                     : "text-stone-700 hover:bg-stone-200 hover:text-stone-950"
                 }`}
               >
@@ -187,13 +181,11 @@ export function DashboardSidebar({
                 collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100"
               }`}
             >
-              <p className="truncate text-sm font-semibold">
+              <p className="truncate text-sm font-medium">
                 {user?.name || user?.github_login || "Usuário"}
               </p>
               {user ? (
-                <p className="truncate text-xs">
-                  @{user.github_login}
-                </p>
+                <p className="truncate text-xs">@{user.github_login}</p>
               ) : null}
             </div>
           </div>

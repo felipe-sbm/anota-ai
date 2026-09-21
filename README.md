@@ -1,6 +1,6 @@
 # Anota aí
 
-![Logo do Anota aí](/apps/extension/assets/logo.png)
+![Logo do Anota aí](/apps/ui/public/icons/theme/logo-light.webp)
 
 ## Sobre o projeto
 

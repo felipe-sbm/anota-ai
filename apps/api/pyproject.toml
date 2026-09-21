@@ -1,0 +1,4 @@
+[tool.uvicorn]
+reload = true
+reload-dir = "app"
+reload-exclude = [".venv/*", "__pycache__/*"]

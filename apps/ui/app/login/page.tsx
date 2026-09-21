@@ -52,25 +52,26 @@ export default function LoginPage() {
         <div className="rounded-3xl border border-stone-100 bg-white p-8 shadow-xl sm:p-10">
           <div className="mb-8 flex flex-col items-center text-center">
             <Image
-              src="/logo.webp"
-              alt="Logotipo do Anota Aí!"
+              src="/icons/theme/logo.webp"
+              alt="Logo"
               width={180}
               height={60}
               className="mb-6 h-14 w-auto"
+              priority
             />
             <h1 className="text-2xl font-bold tracking-tight text-stone-900">
               Bem-vindo(a) de volta!
             </h1>
             <p className="mt-2 max-w-xs text-sm text-stone-500">
-              Entre com sua conta GitHub para acessar o seu painel de
-              gravações e equipes.
+              Entre com sua conta GitHub para acessar o seu painel de gravações
+              e equipes.
             </p>
           </div>
 
           <button
             type="button"
             onClick={handleGithubLogin}
-            className="flex w-full items-center justify-center gap-3 rounded-full bg-brand px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-hover cursor-pointer"
+            className="flex w-full items-center justify-center gap-3 rounded-full bg-brand px-6 py-3.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-hover cursor-pointer"
           >
             <GithubIcon className="h-5 w-5" />
             Entrar com GitHub

@@ -1,5 +1,4 @@
 import type { ComponentType } from "react";
-import Image from "next/image";
 import {
   FacebookIcon,
   GithubIcon,
@@ -8,6 +7,7 @@ import {
   WhatsAppIcon,
   XIcon,
 } from "@/components/icons";
+import Image from "next/image";
 import {
   facebookShareUrl,
   linkedinShareUrl,
@@ -73,7 +73,7 @@ const socialLinks: {
 function FooterColumn({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <h4 className="mb-4 text-sm font-semibold tracking-tight text-stone-900">
+      <h4 className="mb-4 text-sm font-medium tracking-tight text-stone-900">
         {title}
       </h4>
       <ul className="space-y-3 text-[13px] text-stone-600">
@@ -99,7 +99,7 @@ export function Footer() {
           <FooterColumn title="Sobre o Projeto" links={aboutLinks} />
           <FooterColumn title="Contato" links={contactLinks} />
           <div>
-            <h4 className="mb-4 text-sm font-semibold tracking-tight text-stone-900">
+            <h4 className="mb-4 text-sm font-medium tracking-tight text-stone-900">
               Compartilhe o projeto!
             </h4>
             <div className="flex items-center gap-4 text-stone-700">
@@ -132,15 +132,15 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-3">
             <Image
-              src="/logo.webp"
-              alt="Logotipo do Anota Aí!"
+              src="/icons/theme/logo.webp"
+              alt="Logo"
               width={96}
               height={32}
               className="h-6 w-auto"
             />
           </div>
         </div>
-        <p className="pt-4 text-left text-xs text-stone-400">
+        <p className="pt-4 text-left font-mono text-xs text-stone-400">
           © 2026 Anota Aí. Todos os direitos reservados.
         </p>
       </div>
