@@ -1,0 +1,103 @@
+# fiz um workflow único para tudo porque senão iria poluir de mais a página de workflows, com três por commit, iria ficar estranho, é melhor fazer tudo em um só mesmo.
+# não sei ainda se tem como fazer para rodar o workflow apenas do app que tiver sido alterado, mas se não tiver, tudo bem, não é um problema grande agora! :)
+
+name: Validação do monorepo
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "apps/ui/**"
+      - "apps/extension/**"
+      - "apps/api/**"
+      - ".github/workflows/system_validation.yml"
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - "apps/ui/**"
+      - "apps/extension/**"
+      - "apps/api/**"
+      - ".github/workflows/system_validation.yml"
+
+jobs:
+  ui:
+    name: UI - lint e build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/ui
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/ui/package-lock.json
+
+      - name: Install UI dependencies
+        run: npm ci
+
+      - name: Run UI lint
+        run: npm run lint
+
+      - name: Build UI app
+        run: npm run build
+
+  extension:
+    name: Extension - build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/extension
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/extension/package-lock.json
+
+      - name: Install extension dependencies
+        run: npm ci
+
+      - name: Build extension
+        run: npm run build
+
+  api:
+    name: API - validação Python
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install API dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate Python syntax
+        run: python -m compileall app
