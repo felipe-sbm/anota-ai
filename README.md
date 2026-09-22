@@ -94,7 +94,7 @@ Como iniciar o projeto:
 
     pip install -r requirements.txt
 
-    uvicorn app.main:app --reload
+    python3 run.py
     ```
 
     A API estará rodando localmente em `http://localhost:8000`.

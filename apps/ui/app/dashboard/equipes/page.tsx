@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Users, UserRoundPlus } from "lucide-react";
 
-import { DashboardHeader } from "@/components/dashboard/header";
-import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { useAuth } from "@/lib/auth";
 import {
   fetchTeams,

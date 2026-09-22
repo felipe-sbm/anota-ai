@@ -78,17 +78,21 @@ export function DashboardSidebar({
       >
         <div
           className={`flex h-16 shrink-0 items-center border-b border-white/10 transition-[padding] duration-300 ease-in-out ${
-            collapsed ? "justify-center px-2" : "justify-between px-5"
+            collapsed ? "justify-center px-2" : "justify-between px-3"
           }`}
         >
-          <Link href="/" className="flex min-w-0 items-center gap-2">
+          <Link
+            href="/dashboard"
+            title="Voltar para a dashboard"
+            className="flex items-center hover:bg-stone-200 rounded-lg w-full transition-colors"
+          >
             {!collapsed ? (
               <Image
                 src="/icons/theme/logo.webp"
                 alt="Logo"
                 width={120}
                 height={40}
-                className="h-9 w-auto"
+                className="h-9 w-auto ml-2"
               />
             ) : (
               <Image
@@ -96,7 +100,7 @@ export function DashboardSidebar({
                 alt="Logo"
                 width={40}
                 height={40}
-                className="h-9 w-auto"
+                className="h-9 w-auto mx-2"
               />
             )}
           </Link>
@@ -148,7 +152,7 @@ export function DashboardSidebar({
                   collapsed ? "justify-center" : "gap-2"
                 } ${
                   active
-                    ? "bg-stone-200/75 text-stone-900 font-medium"
+                    ? "bg-stone-200/75 text-stone-900 font-medium hover:bg-stone-300/75"
                     : "text-stone-700 hover:bg-stone-200 hover:text-stone-950"
                 }`}
               >

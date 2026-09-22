@@ -10,12 +10,13 @@ import {
   LogOut,
   Menu,
   MonitorSmartphone,
-  MoonStar,
+  // MoonStar,
   PanelLeft,
   Settings,
   SunMedium,
 } from "lucide-react";
 
+import { Transition } from "@/components/transition";
 import { useAuth } from "@/lib/auth";
 
 type ThemeOption = "light" | "dark" | "auto";
@@ -56,6 +57,16 @@ export function DashboardHeader({
     return "auto";
   });
   const ref = useRef<HTMLDivElement | null>(null);
+
+  const displayName = user?.name || user?.github_login || "Usuário";
+  const githubHandle = user?.github_login
+    ? user.github_login.replace(/^@+/, "")
+    : null;
+  const githubLabel = githubHandle ? `@${githubHandle}` : null;
+  // só anima quando existe um nome distinto do login; senão mantém o alias visível embaixo
+  const canRoll = Boolean(
+    user?.name && githubHandle && user.name !== githubHandle,
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -125,7 +136,7 @@ export function DashboardHeader({
         <button
           type="button"
           onClick={() => setMenuOpen((value) => !value)}
-          className="flex items-center gap-3 rounded-full border border-stone-200 bg-stone-50 px-2 py-1.5 text-left transition-colors hover:border-stone-300 hover:bg-stone-100 cursor-pointer"
+          className="group flex items-center gap-3 rounded-full border border-stone-200 bg-stone-50 px-2 py-1.5 text-left transition-colors hover:border-stone-300 hover:bg-stone-100 cursor-pointer"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
         >
@@ -143,13 +154,17 @@ export function DashboardHeader({
             </span>
           )}
 
-          <div className="hidden text-left sm:block">
+          <div className="hidden min-w-0 text-left sm:block">
             <p className="text-sm font-medium leading-tight text-stone-900">
-              {user?.name || user?.github_login || "Usuário"}
+              {canRoll && githubLabel ? (
+                <Transition first={displayName} second={githubLabel} />
+              ) : (
+                displayName
+              )}
             </p>
-            {user ? (
+            {githubLabel && !canRoll ? (
               <p className="text-xs leading-tight text-stone-500">
-                @{user.github_login}
+                {githubLabel}
               </p>
             ) : null}
           </div>
