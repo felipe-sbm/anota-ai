@@ -44,7 +44,7 @@ async def list_repositories_endpoint(
         raise HTTPException(status_code=401, detail="github_login faltando no JWT")
 
     repos = list_user_repositories(github_login)
-    return {"repositórios": repos}
+    return {"repositories": repos}
 
 
 @app_router.post("/repositories", status_code=201)
@@ -85,7 +85,7 @@ async def add_repositories_endpoint(
         except Exception as e:
             errors.append({"full_name": full_name, "error": str(e)})
 
-    return {"dicionados": added, "erros": errors}
+    return {"added": added, "errors": errors}
 
 
 @app_router.delete("/repositories/{full_name:path}", status_code=200)
