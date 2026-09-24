@@ -9,6 +9,7 @@ import {
   AudioLines,
   CircleUser,
   FolderKanban,
+  FolderGit2,
   LayoutDashboard,
   Settings,
   Users,
@@ -37,9 +38,15 @@ const navItems: NavItem[] = [
     Icon: Users,
   },
   {
+    label: "Repositórios",
+    href: "/dashboard/repositorios",
+    Icon: FolderGit2,
+  },
+  {
     label: "Issues",
     href: "/dashboard/issues",
     Icon: FolderKanban,
+    disabled: true,
   },
   {
     label: "Configurações",

@@ -87,6 +87,21 @@ class GithubService:
                     )
             raise RuntimeError(f"Erro do GitHub ao criar issue em '{repo_full_name}': {error_msg}")
 
+    def get_repo(self, repo_full_name: str) -> Dict[str, Any]:
+        # busca um repositório específico e normaliza no mesmo fomato de list_user_repos
+        
+        repo = self._gh.get_repo(repo_full_name)
+        return {
+            "id": repo.id,
+            "full_name": repo.full_name,
+            "name": repo.name,
+            "owner": repo.owner.login,
+            "private": repo.private,
+            "description": repo.description or "",
+            "html_url": repo.html_url,
+            "default_branch": repo.default_branch,
+        }
+
     def list_user_repos(self) -> List[Dict[str, Any]]:
         """List repositories the authenticated user has access to."""
         user = self._gh.get_user()
@@ -94,11 +109,13 @@ class GithubService:
         result = []
         for repo in repos:
             result.append({
+                "id": repo.id,
                 "full_name": repo.full_name,
                 "name": repo.name,
                 "owner": repo.owner.login,
                 "private": repo.private,
                 "description": repo.description or "",
                 "html_url": repo.html_url,
+                "default_branch": repo.default_branch,
             })
         return result

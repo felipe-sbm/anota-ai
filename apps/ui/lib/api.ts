@@ -62,6 +62,13 @@ export type TeamMember = {
   added_at: string;
 };
 
+export type CreatedIssue = {
+  number?: number;
+  title?: string;
+  html_url?: string;
+  repo_full_name?: string;
+};
+
 export type GithubRepo = {
   id: number;
   name: string;
@@ -70,6 +77,18 @@ export type GithubRepo = {
   html_url?: string;
   description?: string | null;
   default_branch?: string;
+};
+
+export type Repository = {
+  id: string;
+  full_name: string;
+  name: string;
+  owner: string;
+  private: boolean;
+  description?: string | null;
+  html_url?: string | null;
+  default_branch?: string | null;
+  created_at: string;
 };
 
 export type DashboardSummary = {
@@ -141,11 +160,98 @@ export async function fetchGithubRepos(token: string): Promise<GithubRepo[]> {
   return data.repos ?? [];
 }
 
+export const REPOSITORIES_PATH = "/api/repositories";
+
+export async function fetchRepositories(token: string): Promise<Repository[]> {
+  const data = await fetchAuthorized<{ repositories: Repository[] }>(
+    REPOSITORIES_PATH,
+    token,
+  );
+  return data.repositories ?? [];
+}
+
+export async function addRepositories(
+  token: string,
+  fullNames: string[],
+): Promise<{ added: string[]; errors: Array<{ full_name: string; error: string }> }> {
+  return mutateAuthorized<{ added: string[]; errors: Array<{ full_name: string; error: string }> }>(
+    REPOSITORIES_PATH,
+    token,
+    "POST",
+    { full_names: fullNames },
+  );
+}
+
+export async function removeRepository(
+  token: string,
+  fullName: string,
+): Promise<{ ok: boolean }> {
+  return mutateAuthorized<{ ok: boolean }>(
+    `${REPOSITORIES_PATH}/${fullName}`,
+    token,
+    "DELETE",
+  );
+}
+
+async function mutateAuthorized<T>(
+  path: string,
+  token: string,
+  method: "POST" | "PUT" | "DELETE",
+  body?: unknown,
+): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) throw new Error(`Falha na operação (status ${res.status})`);
+  return (await res.json()) as T;
+}
+
+export async function createTeam(token: string, name: string) {
+  return mutateAuthorized<{ team_id: string }>(TEAMS_PATH, token, "POST", { name });
+}
+
+export async function updateTeam(token: string, teamId: string, name: string) {
+  return mutateAuthorized<{ ok: boolean }>(`${TEAMS_PATH}/${teamId}`, token, "PUT", { name });
+}
+
+export async function addTeamMembers(token: string, teamId: string, githubLogins: string[]) {
+  return mutateAuthorized<{ ok: boolean }>(`${TEAMS_PATH}/members`, token, "POST", {
+    team_id: teamId,
+    github_logins: githubLogins,
+  });
+}
+
+export async function removeTeamMember(token: string, teamId: string, githubLogin: string) {
+  return mutateAuthorized<{ ok: boolean }>(
+    `${TEAMS_PATH}/${teamId}/members/${encodeURIComponent(githubLogin)}`,
+    token,
+    "DELETE",
+  );
+}
+
+export async function createIssuesBatch(
+  token: string,
+  fileId: string,
+  tasks: Array<{ title: string; body: string; repo_full_name: string; assignee?: string }>,
+) {
+  return mutateAuthorized<{ created_issues: CreatedIssue[]; errors: Array<Record<string, string>> }>(
+    "/api/issues/batch",
+    token,
+    "POST",
+    { file_id: fileId, tasks },
+  );
+}
+
 export async function fetchDashboardSummary(
   token: string,
 ): Promise<DashboardSummary> {
   const [recentRecords, totalRecords, teams] = await Promise.all([
-    fetchAudioRecords(token, 8),
+    fetchAudioRecords(token, 50),
     fetchAudioRecordsCount(token),
     fetchTeams(token),
   ]);
@@ -159,7 +265,8 @@ export async function fetchDashboardSummary(
 
   const pendingTasks = recentRecords.reduce((count, record) => {
     const tasks = Array.isArray(record.tasks) ? record.tasks : [];
-    return count + tasks.length;
+    const created = Array.isArray(record.created_issues) ? record.created_issues.length : 0;
+    return count + Math.max(0, tasks.length - created);
   }, 0);
 
   return {

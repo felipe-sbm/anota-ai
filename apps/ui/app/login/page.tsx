@@ -47,9 +47,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-brand-light px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center px-6 py-12 bg-gradient-to-t from-stone-200 to-white">
+    <div className=""></div>
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-stone-100 bg-white p-8 shadow-xl sm:p-10">
+        <div className="rounded-3xl border border-stone-200 bg-white p-8 sm:p-10">
           <div className="mb-8 flex flex-col items-center text-center">
             <Image
               src="/icons/theme/logo.webp"
@@ -71,7 +72,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleGithubLogin}
-            className="flex w-full items-center justify-center gap-3 rounded-full bg-brand px-6 py-3.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-hover cursor-pointer"
+            className="flex w-[12rem] mx-auto items-center justify-center gap-3 rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-hover cursor-pointer"
           >
             <GithubIcon className="h-5 w-5" />
             Entrar com GitHub

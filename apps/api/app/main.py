@@ -9,6 +9,7 @@ from .routes.process import app_router as process_router
 from .routes.auth_github import app_router as auth_github_router
 from .routes.teams import app_router as teams_router
 from .routes.issues import app_router as issues_router
+from .routes.repositories import app_router as repositories_router
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ app.include_router(process_router)
 app.include_router(auth_github_router)
 app.include_router(teams_router)
 app.include_router(issues_router)
+app.include_router(repositories_router)
 
 
 @app.get("/")

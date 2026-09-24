@@ -177,13 +177,15 @@ export default function DashboardPage() {
           {summary?.recentRecords.length ? (
             <div className="space-y-3">
               {summary.recentRecords.map((record: AudioRecord) => (
-                <div
+                <button
                   key={record.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                  type="button"
+                  onClick={() => router.push(`/dashboard/gravacoes/${record.id}`)}
+                  className="flex w-full flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between transition hover:border-stone-300 hover:bg-stone-50 cursor-pointer"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-stone-900">
-                      {record.original_filename || record.filename}
+                      {record.summary ? <>{record.summary.slice(0, 60)}...</> : null}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
                       <Clock3 className="h-3.5 w-3.5" />
@@ -204,7 +206,7 @@ export default function DashboardPage() {
                         : " tarefa"}
                     </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (

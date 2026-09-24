@@ -39,12 +39,6 @@ async def list_github_repos(
 
     gh = GithubService(access_token=github_access_token)
 
-    if req.file_id:
-        record = get_record(req.file_id)
-        if record is None or record.get("user_github_login") != auth.get("github_login", ""):
-            raise HTTPException(status_code=404, detail="Record not found")
-        if record.get("status") != "reviewed":
-            raise HTTPException(status_code=409, detail="Review the tasks before creating issues")
     try:
         repos = gh.list_user_repos()
         return {"repos": repos}
@@ -86,17 +80,18 @@ async def create_issues_batch(
     # Se informou file_id, atualiza o registro com as issues criadas
     if req.file_id:
         record = get_record(req.file_id)
-        if record:
-            existing_issues = record.get("created_issues") or []
-            if isinstance(existing_issues, str):
-                import json
-                existing_issues = json.loads(existing_issues)
-            all_issues = existing_issues + created_issues
-            update_record_status(
-                req.file_id,
-                status="reviewed",
-                created_issues=all_issues,
-            )
+        if record is None or record.get("user_github_login") != auth.get("github_login", ""):
+            raise HTTPException(status_code=404, detail="Registro não encontrado")
+        existing_issues = record.get("created_issues") or []
+        if isinstance(existing_issues, str):
+            import json
+            existing_issues = json.loads(existing_issues)
+        all_issues = existing_issues + created_issues
+        update_record_status(
+            req.file_id,
+            status="reviewed",
+            created_issues=all_issues,
+        )
 
     return {
         "created_issues": created_issues,

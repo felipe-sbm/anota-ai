@@ -80,6 +80,24 @@ def init_db():
         """
     )
 
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS repositories (
+            id TEXT PRIMARY KEY,
+            full_name TEXT NOT NULL,
+            name TEXT NOT NULL,
+            owner TEXT NOT NULL,
+            private INTEGER NOT NULL DEFAULT 0,
+            description TEXT,
+            html_url TEXT,
+            default_branch TEXT,
+            created_by_github_login TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(created_by_github_login, full_name)
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
 
@@ -204,6 +222,31 @@ def create_team(team_id: str, name: str, created_by_github_login: str) -> None:
     conn.close()
 
 
+def update_team(team_id: str, name: str, created_by_github_login: str) -> bool:
+    conn = _get_conn()
+    cursor = conn.execute(
+        """
+        UPDATE teams
+        SET name = ?
+        WHERE id = ? AND created_by_github_login = ?
+        """,
+        (name, team_id, created_by_github_login),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0
+
+
+def team_belongs_to_user(team_id: str, github_login: str) -> bool:
+    conn = _get_conn()
+    row = conn.execute(
+        "SELECT 1 FROM teams WHERE id = ? AND created_by_github_login = ?",
+        (team_id, github_login),
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+
 def add_team_members(team_id: str, github_logins: list[str]) -> None:
     if not github_logins:
         return
@@ -296,3 +339,76 @@ def get_user_aliases() -> Dict[str, str]:
             continue
         out[norm(a)] = r["github_login"]
     return out
+
+
+# -------------------------
+# Repositories
+# -------------------------
+
+def add_repository(
+    repo_id: str,
+    full_name: str,
+    name: str,
+    owner: str,
+    private: bool,
+    description: Optional[str],
+    html_url: Optional[str],
+    default_branch: Optional[str],
+    created_by_github_login: str,
+) -> bool:
+    # registra um repositório no sistema (ignora se o usuário e repo já existir)
+    conn = _get_conn()
+    now = datetime.utcnow().isoformat()
+    try:
+        cursor = conn.execute(
+            """
+            INSERT OR IGNORE INTO repositories (
+                id, full_name, name, owner, private, description, html_url,
+                default_branch, created_by_github_login, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                repo_id,
+                full_name,
+                name,
+                owner,
+                int(private),
+                description,
+                html_url,
+                default_branch,
+                created_by_github_login,
+                now,
+            ),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def list_user_repositories(github_login: str) -> list[dict]:
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT id, full_name, name, owner, private, description, html_url,
+               default_branch, created_at
+        FROM repositories
+        WHERE created_by_github_login = ?
+        ORDER BY created_at DESC
+        """,
+        (github_login,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def remove_repository(github_login: str, full_name: str) -> bool:
+    conn = _get_conn()
+    cursor = conn.execute(
+        "DELETE FROM repositories WHERE created_by_github_login = ? AND full_name = ?",
+        (github_login, full_name),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0

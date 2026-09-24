@@ -86,7 +86,7 @@ export default function Home() {
                   Anota Aí para Equipes de Software
                 </h2>
                 <p className="mb-2 text-base font-medium font-mono text-brand">
-                  Versão 0.0.15 (Extensão de Navegador)
+                  Versão 0.0.16 (Extensão de Navegador)
                 </p>
                 <p className="mb-8 text-base leading-relaxed text-stone-600 sm:text-lg">
                   O Anota Aí utiliza inteligência artificial para capturar o

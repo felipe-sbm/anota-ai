@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from ..core.security import verify_jwt
-from ..models.database import add_team_members, create_team, get_team_members, list_user_teams, remove_team_member, upsert_user_aliases
+from ..models.database import add_team_members, create_team, get_team_members, list_user_teams, remove_team_member, team_belongs_to_user, update_team, upsert_user_aliases
 
 app_router = APIRouter(prefix="/api", tags=["teams"])
 
@@ -31,6 +31,10 @@ async def require_auth(authorization: str = Header(None)):
 
 
 class CreateTeamRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+class UpdateTeamRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
 
 
@@ -66,6 +70,8 @@ async def remove_team_member_endpoint(
     github_login: str,
     auth=Depends(require_auth),
 ):
+    if not team_belongs_to_user(team_id, auth.get("github_login", "")):
+        raise HTTPException(status_code=404, detail="Equipe não encontrada")
     remove_team_member(team_id=team_id, github_login=github_login)
     return {"ok": True}
 
@@ -75,6 +81,8 @@ async def get_team_members_endpoint(
     team_id: str,
     auth=Depends(require_auth),
 ):
+    if not team_belongs_to_user(team_id, auth.get("github_login", "")):
+        raise HTTPException(status_code=404, detail="Equipe não encontrada")
     members = get_team_members(team_id)
     return {"members": members}
 
@@ -103,8 +111,20 @@ async def add_team_members_endpoint(
     if not req.github_logins:
         return {"ok": True}
 
-    # MVP: não valida ownership; só adiciona.
+    if not team_belongs_to_user(req.team_id, auth.get("github_login", "")):
+        raise HTTPException(status_code=404, detail="Equipe não encontrada")
     add_team_members(team_id=req.team_id, github_logins=req.github_logins)
+    return {"ok": True}
+
+
+@app_router.put("/teams/{team_id}", status_code=200)
+async def update_team_endpoint(
+    team_id: str,
+    req: UpdateTeamRequest,
+    auth=Depends(require_auth),
+):
+    if not update_team(team_id, req.name.strip(), auth.get("github_login", "")):
+        raise HTTPException(status_code=404, detail="Equipe não encontrada")
     return {"ok": True}
 
 
