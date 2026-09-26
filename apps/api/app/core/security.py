@@ -9,7 +9,7 @@ from .config import settings
 
 
 def create_jwt(payload: dict[str, Any]) -> str:
-    """cria um JWT assinado com os claims padrão (iat/exp) da API."""
+    # cria um JWT assinado com os claims padrão (iat/exp) da API.
     now = datetime.now(timezone.utc)
     data = {
         **payload,
@@ -20,7 +20,7 @@ def create_jwt(payload: dict[str, Any]) -> str:
 
 
 def verify_jwt(token: str) -> dict[str, Any]:
-    """verifica a validade do JWT e retorna os claims decodificados."""
+    # verifica a validade do JWT e retorna os claims decodificados.
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])
     except JWTError as exc:

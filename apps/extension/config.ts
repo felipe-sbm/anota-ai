@@ -1,5 +1,5 @@
-// Configurações centralizadas da extensão
-// Variáveis de ambiente com prefixo PLASMO_PUBLIC_ são expostas ao frontend
+// configurações centralizadas da extensão
+// variáveis de ambiente com prefixo PLASMO_PUBLIC_ são expostas ao frontend
 
 export const AUTH_TOKEN_KEY = "anota_ai_access_token"
 

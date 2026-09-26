@@ -63,7 +63,7 @@ export function DashboardHeader({
     ? user.github_login.replace(/^@+/, "")
     : null;
   const githubLabel = githubHandle ? `@${githubHandle}` : null;
-  // só anima quando existe um nome distinto do login; senão mantém o alias visível embaixo
+  // só anima quando existe um nome distinto do login; se não, mantém o alias visível embaixo
   const canRoll = Boolean(
     user?.name && githubHandle && user.name !== githubHandle,
   );

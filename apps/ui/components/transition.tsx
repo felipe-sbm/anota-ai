@@ -11,6 +11,8 @@ type transitionProps = {
   second: string;
   step?: number;
   duration?: number;
+  /** quando false, não aplica o próprio group, usa um ancestor com a classe group (útil para células inteiras) */
+  ownGroup?: boolean;
 };
 
 function toChars(text: string): string[] {
@@ -22,6 +24,7 @@ export function Transition({
   second,
   step = 25,
   duration = 300,
+  ownGroup = true,
 }: transitionProps) {
   const firstChars = toChars(first);
   const secondChars = toChars(second);
@@ -31,8 +34,16 @@ export function Transition({
     transitionDuration: `${duration}ms`,
   });
 
+  /** esta modificação da v0.0.17  utiliza `overflow-hidden` para cortar qualquer porção que ultrapasse os limites!
+  *
+  * O texto que estiver sendo usado ao passar o mouse é colocado de forma "absoluta" e, portanto,
+  * não afeta a largura. Se fosse mais longo que o texto original, o último caractere ficaria invisível.
+  * Esta espécie de "âncora invisível" garante exibir todo o texto longo. */
+
+  const stageWidthText = toChars(second.length > first.length ? second : first).join("");
+
   return (
-    <span>
+    <span className="text-left">
       <span className="sr-only">
         {first}
         {second ? ` (@${second})` : ""}
@@ -40,9 +51,13 @@ export function Transition({
 
       <span
         aria-hidden="true"
-        className="group relative block overflow-hidden whitespace-nowrap"
+        className={`${ownGroup ? "group " : ""}relative block overflow-hidden whitespace-nowrap`}
       >
-        <span className="block whitespace-nowrap">
+        <span aria-hidden="true" className="invisible whitespace-nowrap pr-1.5">
+          {stageWidthText}
+        </span>
+
+        <span className="absolute inset-x-0 top-0 whitespace-nowrap">
           {firstChars.map((char, index) => (
             <span
               key={`first-${index}`}

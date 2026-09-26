@@ -1,8 +1,8 @@
 /**
- * Eaê senhores!
- * esse aqui é mínimo da dashboard para API do Anota Aí.
+ * eaê senhores!
+ * esse aqui é o mínimo da dashboard para a api do anota aí.
  *
- * A rota base vem de NEXT_PUBLIC_API_URL; se não estiver definida,
+ * a rota base vem de NEXT_PUBLIC_API_URL; se não estiver definida,
  * assume como http://localhost:8000.
  */
 
@@ -15,11 +15,12 @@ export const GITHUB_REPOS_PATH = "/api/github/repos";
 export const AUDIO_RECORDS_PATH = "/api/audio/records";
 export const AUDIO_RECORDS_COUNT_PATH = "/api/audio/records/count";
 export const TEAMS_PATH = "/api/teams";
+export const ISSUES_PATH = "/api/issues";
 
 /**
- * monda uma url de login do github.
- * `next` é a url para onde a api deve redirecionar o navegador após a autenticação,
- * com o token JWT no query string (tipo "http://localhost:3000/login").
+ * monta uma url de login do github.
+ * next é a url para onde a api deve redirecionar o navegador após a autenticação,
+ * com o token JWT na query string, por exemplo http://localhost:3000/login.
  */
 
 export function buildGithubLoginUrl(next?: string): string {
@@ -89,6 +90,35 @@ export type Repository = {
   html_url?: string | null;
   default_branch?: string | null;
   created_at: string;
+};
+
+export type IssueSource = "external" | "draft" | "anota_ai";
+export type IssuePriority = "low" | "medium" | "high";
+
+export type Issue = {
+  id: string;
+  github_issue_id?: number | null;
+  number?: number | null;
+  title: string;
+  body?: string | null;
+  state: string;
+  repo_full_name: string;
+  source: IssueSource;
+  points: number;
+  priority: IssuePriority;
+  priority_source?: string | null;
+  assignee?: string | null;
+  html_url?: string | null;
+  record_id?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConfirmIssueResult = {
+  id: string;
+  ok: boolean;
+  already?: boolean;
+  error?: string;
 };
 
 export type DashboardSummary = {
@@ -196,7 +226,7 @@ export async function removeRepository(
 async function mutateAuthorized<T>(
   path: string,
   token: string,
-  method: "POST" | "PUT" | "DELETE",
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
   body?: unknown,
 ): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -244,6 +274,79 @@ export async function createIssuesBatch(
     token,
     "POST",
     { file_id: fileId, tasks },
+  );
+}
+
+export async function fetchIssues(token: string): Promise<Issue[]> {
+  const data = await fetchAuthorized<{ issues: Issue[]; total: number }>(
+    `${ISSUES_PATH}?limit=1000&offset=0`,
+    token,
+  );
+  return data.issues ?? [];
+}
+
+export async function createInstantIssue(
+  token: string,
+  payload: {
+    repo_full_name: string;
+    title: string;
+    body?: string;
+    assignee?: string | null;
+    points: number;
+    priority: IssuePriority;
+  },
+): Promise<{ issue: Issue }> {
+  return mutateAuthorized<{ issue: Issue }>(
+    ISSUES_PATH,
+    token,
+    "POST",
+    payload,
+  );
+}
+
+export async function updateIssue(
+  token: string,
+  issueId: string,
+  payload: Record<string, unknown>,
+): Promise<{ issue: Issue }> {
+  return mutateAuthorized<{ issue: Issue }>(
+    `${ISSUES_PATH}/${issueId}`,
+    token,
+    "PATCH",
+    payload,
+  );
+}
+
+export async function deleteIssue(
+  token: string,
+  issueId: string,
+): Promise<{ ok: boolean }> {
+  return mutateAuthorized<{ ok: boolean }>(
+    `${ISSUES_PATH}/${issueId}`,
+    token,
+    "DELETE",
+  );
+}
+
+export async function confirmIssues(
+  token: string,
+  issueIds: string[],
+): Promise<{ results: ConfirmIssueResult[] }> {
+  return mutateAuthorized<{ results: ConfirmIssueResult[] }>(
+    `${ISSUES_PATH}/confirm`,
+    token,
+    "POST",
+    { issue_ids: issueIds },
+  );
+}
+
+export async function syncIssues(
+  token: string,
+): Promise<{ added: number; errors: Array<{ repo: string; error: string }> }> {
+  return mutateAuthorized<{ added: number; errors: Array<{ repo: string; error: string }> }>(
+    `${ISSUES_PATH}/sync`,
+    token,
+    "POST",
   );
 }
 

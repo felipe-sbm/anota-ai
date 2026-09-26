@@ -4,7 +4,7 @@ import Image from "next/image";
 export type SVG_IconProps = SVGProps<SVGSVGElement>;
 export type ClassNameProps = { className?: string };
 
-// GitHub
+// github
 export function GithubIcon(props: SVG_IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
@@ -17,7 +17,7 @@ export function GithubIcon(props: SVG_IconProps) {
   );
 }
 
-// Navegadores de internet
+// navegadores de internet
 export function ChromeIcon({ className }: ClassNameProps) {
   return (
     <Image
@@ -54,7 +54,7 @@ export function FirefoxIcon({ className }: ClassNameProps) {
   );
 }
 
-// Redes Sociais
+// redes sociais
 export function InstagramIcon(props: SVG_IconProps) {
   return (
     <svg

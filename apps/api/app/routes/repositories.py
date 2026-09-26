@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from ..core.security import verify_jwt
-from ..models.database import add_repository, list_user_repositories, remove_repository
+from ..models.database import (
+    add_repository,
+    list_user_repositories,
+    remove_repository,
+    upsert_external_issue,
+)
 from ..services.github_service import GithubService
 
 app_router = APIRouter(prefix="/api", tags=["repositories"])
@@ -52,7 +57,7 @@ async def add_repositories_endpoint(
     req: AddRepositoriesRequest,
     auth=Depends(require_auth),
 ):
-    # Adiciona repositórios ao sistema (busca os dados no GitHub)
+    # adiciona repositórios ao sistema (busca os dados no github)
     github_login = auth.get("github_login")
     github_access_token = auth.get("github_access_token")
     if not github_login:
@@ -82,6 +87,19 @@ async def add_repositories_endpoint(
                 created_by_github_login=github_login,
             )
             added.append(repo["full_name"])
+
+            # traz automaticamente as issues do repositório (categoria external).
+            # um erro aqui não deve impedir o cadastro do repositório.
+            try:
+                gh_issues = gh.list_repo_issues(repo["full_name"], state="all")
+                for issue_data in gh_issues:
+                    upsert_external_issue(
+                        github_login=github_login,
+                        repo_full_name=repo["full_name"],
+                        issue_data=issue_data,
+                    )
+            except Exception:
+                pass
         except Exception as e:
             errors.append({"full_name": full_name, "error": str(e)})
 
@@ -94,8 +112,8 @@ async def remove_repository_endpoint(
     auth=Depends(require_auth),
 ):
     # arquiva um repositório do sistema
-    # não "remove" do GitHub, apenas remove do sistema,
-    # ou seja, arquiva!
+    # não remove do github, apenas remove do sistema,
+    # ou seja, arquiva
     github_login = auth.get("github_login")
     if not github_login:
         raise HTTPException(status_code=401, detail="github_login faltando no JWT")

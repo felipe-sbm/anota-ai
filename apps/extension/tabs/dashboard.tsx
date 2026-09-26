@@ -94,7 +94,7 @@ export default function DashboardPage() {
         const c = typeof data?.count === "number" ? data.count : 0
         setRecordingCount(c)
       } catch {
-        // noop
+        // não faz nada
       }
     }
 

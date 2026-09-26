@@ -1,14 +1,14 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field
 
 class ProcessAudioRequest(BaseModel):
-    # Repo alvo em formato: org/repo (opcional - se não informado, só transcreve e sumariza)
+    # repo alvo no formato org/repo (opcional, se não informado só transcreve e sumariza)
     repo_full_name: Optional[str] = Field(default=None, description="GitHub repo full name, ex: org/repo")
 
-    # Logins GitHub
+    # logins do github
     assignees: List[str] = Field(default_factory=list)
 
-    # Se a extensão enviar file_id
+    # se a extensão enviar file_id
     file_id: Optional[str] = Field(default=None)
 
 
@@ -41,7 +41,7 @@ class JwtSubject(BaseModel):
 
 
 class IssueTaskConfig(BaseModel):
-    """Config for a single issue to be created"""
+    # configuração para uma única issue a ser criada
     title: str
     body: str = ""
     repo_full_name: str
@@ -61,3 +61,31 @@ class ReviewTaskSpec(BaseModel):
 
 class ReviewRequest(BaseModel):
     tasks: List[ReviewTaskSpec] = Field(min_length=1)
+
+
+class IssueCreateRequest(BaseModel):
+    # cria uma issue instantânea dentro do próprio sistema
+    
+    repo_full_name: str = Field(min_length=1)
+    title: str = Field(min_length=1, max_length=256)
+    body: str = ""
+    assignee: Optional[str] = Field(default=None, description="GitHub login do responsável")
+    points: int = Field(default=0, ge=0, le=100, description="Pontos/importancia no sistema")
+    priority: Literal["low", "medium", "high"] = "medium"
+
+
+class IssueUpdateRequest(BaseModel):
+    # atualiza campos e detalhes internos de uma tarefa (pontos, prioridade etc.)
+    
+    title: Optional[str] = Field(default=None, min_length=1, max_length=256)
+    body: Optional[str] = None
+    repo_full_name: Optional[str] = None
+    assignee: Optional[str] = None
+    points: Optional[int] = Field(default=None, ge=0, le=100)
+    priority: Optional[Literal["low", "medium", "high"]] = None
+
+
+class ConfirmIssuesRequest(BaseModel):
+    # confirma rascunhos e os envia ao GitHub como issues reais
+    
+    issue_ids: List[str] = Field(min_length=1, max_length=100)

@@ -1,4 +1,4 @@
-/* Dashboard Layout */
+/* layout do dashboard */
 .app-layout {
   font-family:
     system-ui,
@@ -56,7 +56,7 @@
   min-height: 100vh;
 }
 
-/* Sidebar */
+/* barra lateral */
 .sidebar {
   width: 220px;
   min-width: 220px;
@@ -238,7 +238,7 @@
   color: #b91c1c;
 }
 
-/* App Content */
+/* conteúdo do aplicativo */
 .app-content {
   flex: 1;
   padding: 24px;
@@ -263,7 +263,7 @@
   margin: 0 auto;
 }
 
-/* History Dashboard */
+/* histórico do dashboard */
 .history-dashboard {
   display: flex;
   flex-direction: column;
@@ -651,7 +651,7 @@
   font-weight: 500;
 }
 
-/* Teams */
+/* equipes */
 .teams-page {
   display: flex;
   flex-direction: column;

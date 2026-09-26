@@ -3,7 +3,7 @@ from functools import lru_cache
 import whisper
 
 def _uploads_dir() -> str:
-    # apps/api/app/services/whisper_service.py ------> apps/api/uploads
+    # sobe dois níveis a partir deste arquivo para chegar em apps/api/uploads
     return os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
     )

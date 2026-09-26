@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import Image from "next/image";
 
-// Depois irei colocar links funcionais de verdade, por enquanto será só mock
+// depois irei colocar links funcionais de verdade, por enquanto será só mock
 const docsLinks = ["Documentação", "Suporte", "Ver Demonstração"];
 const accountLinks: { label: string; href: string | null }[] = [
   { label: "Como usar o GitHub Issues", href: null },
@@ -14,7 +14,7 @@ const navLinks = ["Como Funciona", "Recursos", "Documentação", "Sobre o TCC"];
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-stone-100 bg-white">
-      {/** Atalhos úteis */}
+      {/** atalhos úteis */}
       <div className="border-b border-stone-100 bg-white text-[13px] text-stone-500">
         <div className="mx-auto flex h-9 max-w-[1360px] items-center justify-end gap-6 px-6">
           <a className="flex cursor-pointer items-center gap-1.5 font-normal text-stone-700 transition-colors hover:text-brand">
@@ -51,7 +51,7 @@ export function Header() {
         </div>
       </div>
 
-      {/** Cabeçalho */}
+      {/** cabeçalho */}
       <div className="mx-auto flex h-20  items-center justify-between px-6">
         <div className="flex items-center gap-10">
           <a className="cursor-pointer">

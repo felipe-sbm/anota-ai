@@ -11,12 +11,9 @@ def _normalize(s: str) -> str:
 
 
 def _extract_candidates(transcript: str) -> List[str]:
-    """MVP: extrai "palavras" e sequências simples para tentar bater com aliases.
-
-    Estratégia:
-    - manter só tokens alfanuméricos/underscore/acentos
-    - gerar n-grams de 1 até 3 tokens (ex: "felipe potigol")
-    """
+    # MVP: extrai palavras e sequências simples para tentar bater com aliases.
+    # estratégia: manter só tokens alfanuméricos, underscore e acentos;
+    # gerar n grams de 1 até 3 tokens (exemplo: felipe potigol)
 
     tokens = re.findall(r"[\wÀ-ÿ]+", transcript, flags=re.IGNORECASE)
     tokens = [_normalize(t) for t in tokens if t.strip()]
@@ -27,7 +24,7 @@ def _extract_candidates(transcript: str) -> List[str]:
             gram = " ".join(tokens[i : i + n])
             candidates.append(gram)
 
-    # dedupe preservando ordem
+    # remove duplicados preservando a ordem
     seen = set()
     out = []
     for c in candidates:
@@ -38,19 +35,15 @@ def _extract_candidates(transcript: str) -> List[str]:
 
 
 def resolve_assignees_from_transcript(*, transcript: str, allowed_github_logins: List[str] | None = None) -> List[str]:
-    """
-    Retorna github_logins resolvidos a partir de menções por nome/apelido.
-
-    allowed_github_logins:
-      - se fornecido, filtra para apenas esses logins.
-    """
+    # retorna github_logins resolvidos a partir de menções por nome ou apelido.
+    # allowed_github_logins: se fornecido, filtra para apenas esses logins.
 
     transcript_norm = _normalize(transcript)
     if not transcript_norm:
         return []
 
     aliases = get_user_aliases()
-    # aliases: {normalized_alias: github_login}
+    # aliases no formato alias normalizado para github_login
 
     candidates = _extract_candidates(transcript_norm)
 

@@ -1,5 +1,5 @@
-# fiz um workflow único para tudo porque senão iria poluir de mais a página de workflows, com três por commit, iria ficar estranho, é melhor fazer tudo em um só mesmo.
-# não sei ainda se tem como fazer para rodar o workflow apenas do app que tiver sido alterado, mas se não tiver, tudo bem, não é um problema grande agora! :)
+# fiz um workflow único para tudo porque senão iria poluir demais a página de workflows; com três por commit iria ficar estranho, é melhor fazer tudo em um só mesmo.
+# não sei ainda se tem como fazer para rodar o workflow apenas do app que tiver sido alterado, mas se não tiver, tudo bem, não é um problema grande agora
 
 name: Validação do monorepo
 

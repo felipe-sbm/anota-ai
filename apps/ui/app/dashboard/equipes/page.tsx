@@ -236,13 +236,17 @@ export default function TeamsPage() {
           {teams.map((team) => (
             <article
               key={team.id}
-              className="rounded-3xl border border-stone-200 bg-stone-50 p-5"
+              className="rounded-3xl border border-stone-200 bg-gradient-to-t from-stone-100 to-white p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                    Equipe
-                  </p>
+                  
+                  {/** eu queria fazer essa página de equipes de uma forma mais completa,
+                   * tipo, poder encaixar uma organização à equipe, ter uma página para ver
+                   * todas as issues que possui na equipe, todos os repositórios em que
+                   * a equipe atua, ver os membros de forma detalhada, para ver o
+                   * desempenho de cada um (assim implementando o diagrama de burndown). */}
+
                   <h2 className="mt-1 text-xl font-medium text-stone-900">
                     {editingTeamId === team.id ? (
                       <input

@@ -182,7 +182,7 @@ function IndexPopup() {
         return
       }
 
-      // 1. Upload do áudio
+      // 1. upload do áudio
       const uploadResponse = await fetch(`${API_BASE}/api/audio/upload`, {
         method: "POST",
         body: formData,
@@ -199,7 +199,7 @@ function IndexPopup() {
       const uploadData = await uploadResponse.json()
       const fileId = uploadData.file_id
 
-      // 2. Dispara o processamento automaticamente
+      // 2. dispara o processamento automaticamente
       setStatus("uploading")
       setErrorMessage("Transcrevendo áudio...")
 
@@ -219,7 +219,7 @@ function IndexPopup() {
       if (!processResponse.ok) {
         const errText = await processResponse.text()
         console.warn("Processamento falhou, mas upload foi concluído:", errText)
-        // Não falha totalmente - o upload já foi feito e o registro criado
+        // não falha totalmente, o upload já foi feito e o registro foi criado
       } else {
         await processResponse.json()
       }

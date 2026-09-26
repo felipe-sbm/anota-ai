@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Configuração de CORS para permitir requisições da extensão
+# configuração de cors para permitir requisições da extensão
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

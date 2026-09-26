@@ -13,13 +13,15 @@ from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# obs: o resumo pode ser determinístico (fallback) ou via LLM (que o groq eh o padrão).
+# obs: o resumo pode ser determinístico (fallback) ou via LLM (o groq é o padrão).
 
 
 class TaskOut(BaseModel):
     title: str
     body: str = ""
     assignees: list[str] = Field(default_factory=list)
+    points: int = Field(default=0, description="Importancia estimada entre 0 e 100 (sugerencia)")
+    priority: str = Field(default="medium", description='Sugerencia: "low", "medium" ou "high"')
 
 
 class DecisionOut(BaseModel):
@@ -66,6 +68,9 @@ REGRAS:
   - Não invente anexos; use apenas informações que existam no texto.
 - NÃO invente assignees. Use APENAS os assignees fornecidos pelo usuário.
 - Se assignees estiver vazio, deixe assignees de cada task como [].
+- Cada task deve incluir "points" (número inteiro entre 0 e 100, importancia estimada)
+  e "priority" ("low", "medium" ou "high", urgência/impacto).
+- points e priority são APENAS UMA SUGERENCIA do sistema; o usuário poderá ajustá-los depois.
 
 OUTPUT EXCLUSIVAMENTE em JSON válido no formato:
 {{
@@ -74,7 +79,9 @@ OUTPUT EXCLUSIVAMENTE em JSON válido no formato:
     {{
       \"title\": string,
       \"body\": string,
-      \"assignees\": [string]
+      \"assignees\": [string],
+      \"points\": 20,
+      \"priority\": \"high\"
     }}
   ]
 }}
@@ -104,7 +111,7 @@ TRANSCRIÇÃO:
 
 
 def _parse_json(content: str) -> dict[str, Any]:
-    """pega o primeiro objeto JSON válido da resposta da IA"""
+    # pega o primeiro objeto json válido da resposta da ia.
     try:
         return json.loads(content)
     except json.JSONDecodeError:
@@ -115,15 +122,13 @@ def _parse_json(content: str) -> dict[str, Any]:
 
 
 def _groq_api_key() -> str:
-    """retorna a chave do groq"""
+    # retorna a chave do groq.
     return settings.GROQ_API_KEY
 
 
 async def _groq_chat_json(prompt: str) -> dict[str, Any]:
-    """chama o endpoint compatível com OpenAI do Groq pedindo JSON estrito.
-
-    Precisa da chave do Groq no .env (pegue pelo https://console.groq.com).
-    """
+    # chama o endpoint compatível com openai do groq pedindo json estrito.
+    # precisa da chave do groq no .env (pegue pelo console.groq.com).
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {_groq_api_key()}",
@@ -187,16 +192,57 @@ def _sentences(content: str) -> list[str]:
     return [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", content) if sentence.strip()]
 
 
+def _suggest_priority(content: str) -> str:
+    # um pequeno heurístico para sugerir prioridade baseado em palavras-chave
+    # depois vou até deixar mais complexo para pegar de tudo, e por contexto também.
+    # para mvp não é necessário tanta complexidade
+    
+    high = (
+        "urgente", "urgência", "urgência", "imediato", "immediato", "asap",
+        "crític", "critic", "bloquea", "produção", "produccion", "bug",
+        "erro", "roto", "quiebra", "parado", "importante", "prioridade alta",
+    )
+    low = (
+        "opcional", "podemos depois", "para depois", "quando puder",
+        "cuando se pueda", "quando der", "sugestão", "sugerencia", "idea",
+        "nice to have", "sem urgência", "sin urgencia",
+    )
+    content_lower = content.lower()
+    if any(keyword in content_lower for keyword in high):
+        return "high"
+    if any(keyword in content_lower for keyword in low):
+        return "low"
+    return "medium"
+
+
+def _suggest_points(content: str, priority: str) -> int:
+    base = {"high": 40, "medium": 20, "low": 5}.get(priority, 20)
+    content_lower = content.lower()
+    extra = 0
+    if any(
+        keyword in content_lower
+        for keyword in (
+            "complexo", "complejo", "grande", "integração", "integracion",
+            "refactor", "migra", "arquitectura", "arquitetura",
+        )
+    ):
+        extra = 15
+    return min(base + extra, 100)
+
+
 def _fallback_tasks(content: str, assignees: list[str]) -> list[TaskOut]:
     keywords = ["fazer", "implementar", "criar", "refator", "definir", "alinhar", "resolver", "precisa", "vamos"]
     tasks: list[TaskOut] = []
     for sentence in _sentences(content)[:30]:
         if any(keyword in sentence.lower() for keyword in keywords):
+            priority = _suggest_priority(sentence)
             tasks.append(
                 TaskOut(
                     title=f"Tarefa #{len(tasks) + 1}",
                     body=f"Ação:\n{sentence}\n\nAnexos/Referências:",
                     assignees=list(assignees),
+                    points=_suggest_points(sentence, priority),
+                    priority=priority,
                 )
             )
         if len(tasks) >= 5:

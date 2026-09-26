@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
-    """Configurações globais da API, lidas de variáveis de ambiente / .env."""
+    # configurações globais da api, lidas de variáveis de ambiente e do .env
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

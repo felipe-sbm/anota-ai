@@ -86,7 +86,7 @@ export default function Home() {
                   Anota Aí para Equipes de Software
                 </h2>
                 <p className="mb-2 text-base font-medium font-mono text-brand">
-                  Versão 0.0.16 (Extensão de Navegador)
+                  Versão 0.0.17 (Extensão de Navegador)
                 </p>
                 <p className="mb-8 text-base leading-relaxed text-stone-600 sm:text-lg">
                   O Anota Aí utiliza inteligência artificial para capturar o
@@ -96,7 +96,7 @@ export default function Home() {
                 <div className="flex flex-wrap items-center gap-4">
                   <a className="inline-flex cursor-pointer items-center rounded-full bg-brand px-7 py-3 text-[15px] font-medium text-white shadow-sm transition-all hover:bg-brand-hover">
                     Acessar Dashboard da equipe
-                    {/** redireciona para a pagina do navegador que o usuário está usando :) */}
+                    {/** redireciona para a página do navegador que o usuário está usando */}
                   </a>
                 </div>
               </div>

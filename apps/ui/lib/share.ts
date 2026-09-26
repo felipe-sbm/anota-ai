@@ -1,17 +1,15 @@
 /**
- * Função de compartilhamento
+ * função de compartilhamento
  *
- * Fiz um pequeno fluxo de compartilhamento para os links da descrição.
- * Ao clicar, redireciona para a plataforma, mas com o link e a descição
- * do projeto. Coloquei uns comentários aqui em baixo para entender como
+ * fiz um pequeno fluxo de compartilhamento para os links da descrição.
+ * ao clicar, redireciona para a plataforma, mas com o link e a descrição
+ * do projeto. coloquei uns comentários aqui em baixo para entender como
  * funciona.
  *
- * E outra coisa, estou fazendo isso porque não quero criar 450
+ * e outra coisa, estou fazendo isso porque não quero criar 450
  * redes sociais diferentes para um projeto que será apenas uma ferramenta,
  * e não um produto que será monetário, a não ser que eu cobre planos ou coloque
- * propagandas, mas sinceramente, eu não me importo muito em ganhar um din din extra.
- *
- * #JesusIsGood
+ * propagandas, mas sinceramente, eu não me importo muito em ganhar um dinheiro extra.
  */
 
 // link do projeto

@@ -16,13 +16,10 @@ async def chat_json(
     model: str,
     timeout_s: int = 120,
 ) -> Dict[str, Any]:
-    """Chama Ollama e exige JSON estrito no campo `message.content`.
-
-    Estratégia:
-    - Enviar prompt com instrução para devolver JSON válido.
-    - Parsear o content como JSON.
-    - Se o content vier com texto antes/depois, tenta extrair substring JSON.
-    """
+    # chama o ollama e exige json estrito no campo message.content.
+    # estratégia: enviar prompt com instrução para devolver json válido,
+    # parsear o content como json e, se o content vier com texto antes
+    # ou depois, tenta extrair a substring json.
 
     url = base_url.rstrip("/") + "/api/chat"
 
@@ -44,7 +41,7 @@ async def chat_json(
         raise OllamaServiceError(f"Ollama HTTP {resp.status_code}: {resp.text}")
 
     data = resp.json()
-    # Ollama: {message: {role, content}, ...}
+    # ollama devolve message com role e content
     content = (
         data.get("message", {}).get("content")
         if isinstance(data, dict)
@@ -56,7 +53,7 @@ async def chat_json(
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        # tenta extrair o primeiro JSON provável
+        # tenta extrair o primeiro json provável
         start = content.find("{")
         end = content.rfind("}")
         if start == -1 or end == -1 or end <= start:

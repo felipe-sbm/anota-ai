@@ -49,7 +49,7 @@ export default function Dashboard({ onViewDetail, onRecordingCount }: Props) {
         onRecordingCount?.(c)
 
       } catch {
-        // noop
+        // não faz nada
       }
     }
 

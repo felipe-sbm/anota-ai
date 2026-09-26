@@ -54,7 +54,7 @@ async def upload_audio(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Cria registro no banco de dados
+    # cria o registro no banco de dados
     print("[DEBUG] upload_audio auth payload:", auth)
     github_login = auth.get("github_login", "")
     record = insert_record(
@@ -106,7 +106,7 @@ async def get_audio_record(
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
 
-    # Verifica se o registro pertence ao usuário autenticado
+    # verifica se o registro pertence ao usuário autenticado
     github_login = auth.get("github_login", "")
     if record.get("user_github_login") != github_login:
         raise HTTPException(status_code=404, detail="Record not found")

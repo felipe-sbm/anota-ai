@@ -19,7 +19,7 @@ export default function LoginPage() {
     }
   }, [loading, token, user, router]);
 
-  // pega o token que a API envia via redirect após a autenticação
+  // pega o token que a api envia via redirect após a autenticação
   useEffect(() => {
     if (loading || token) return;
 
@@ -27,7 +27,7 @@ export default function LoginPage() {
     const tokenFromUrl = params.get("token");
     if (!tokenFromUrl) return;
 
-    // limpa a URL para não deixar o token exposto em texto puro
+    // limpa a url para não deixar o token exposto em texto puro
     window.history.replaceState({}, "", "/login");
     signIn(tokenFromUrl);
     router.replace("/dashboard");

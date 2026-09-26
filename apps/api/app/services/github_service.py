@@ -50,7 +50,7 @@ class GithubService:
         body: str = "",
         assignee: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create a single issue in a specific repo with an optional assignee."""
+        # cria uma única issue em um repositório específico com assignee opcional.
         from github import GithubException
         try:
             repo = self._gh.get_repo(repo_full_name)
@@ -72,7 +72,7 @@ class GithubService:
             error_msg = str(e)
 
             if status == 403:
-                # "Resource not accessible by integration" = GitHub App not installed on the org/user account
+                # resource not accessible by integration indica que o github app não está instalado na conta ou organização
                 if "resource not accessible" in error_msg.lower() or "integration" in error_msg.lower():
                     raise RuntimeError(
                         f"O Anota Aí (GitHub App) não tem permissão para criar issues em '{repo_full_name}'. "
@@ -80,7 +80,7 @@ class GithubService:
                         f"Acesse: https://github.com/apps/anota-ai/installations/new e instale o app "
                         f"na conta/organização que possui o repositório '{repo_full_name.split('/')[0]}'."
                     )
-                # Missing scopes
+                # escopo ausente
                 if "scope" in error_msg.lower() or "insufficient" in error_msg.lower():
                     raise RuntimeError(
                         f"Token sem permissão 'repo'. Faça login novamente para atualizar as permissões."
@@ -88,7 +88,7 @@ class GithubService:
             raise RuntimeError(f"Erro do GitHub ao criar issue em '{repo_full_name}': {error_msg}")
 
     def get_repo(self, repo_full_name: str) -> Dict[str, Any]:
-        # busca um repositório específico e normaliza no mesmo fomato de list_user_repos
+        # busca um repositório específico e normaliza no mesmo formato de list_user_repos
         
         repo = self._gh.get_repo(repo_full_name)
         return {
@@ -103,7 +103,7 @@ class GithubService:
         }
 
     def list_user_repos(self) -> List[Dict[str, Any]]:
-        """List repositories the authenticated user has access to."""
+        # lista os repositórios que o usuário autenticado tem acesso.
         user = self._gh.get_user()
         repos = user.get_repos(type="all", sort="updated", direction="desc")
         result = []
@@ -117,5 +117,34 @@ class GithubService:
                 "description": repo.description or "",
                 "html_url": repo.html_url,
                 "default_branch": repo.default_branch,
+            })
+        return result
+
+    def list_repo_issues(
+        self, repo_full_name: str, state: str = "all"
+    ) -> List[Dict[str, Any]]:
+        # lista as issues de um repositório
+        # e ignora pull requests, já que são issues para a api do github
+        # depois vou fazer para prs também, mas por enquanto só issues
+
+        repo = self._gh.get_repo(repo_full_name)
+        issues = repo.get_issues(state=state)
+        result = []
+        for issue in issues:
+            if getattr(issue, "pull_request", None):
+                continue
+            result.append({
+                "id": issue.id,
+                "number": issue.number,
+                "title": issue.title,
+                "body": issue.body or "",
+                "html_url": issue.html_url,
+                "state": issue.state,
+                "repo_full_name": repo_full_name,
+                "assignees": [a.login for a in (issue.assignees or [])],
+                "labels": [l.name for l in (issue.labels or [])],
+                "created_at": (
+                    issue.created_at.isoformat() if issue.created_at else None
+                ),
             })
         return result

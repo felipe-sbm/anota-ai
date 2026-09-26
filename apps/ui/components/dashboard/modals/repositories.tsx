@@ -11,7 +11,7 @@ import {
 
 type RepositoriesModalProps = {
   token: string;
-  /** nome completo repositórios já adicionados ao sistema */
+  /** nomes completos dos repositórios já adicionados ao sistema */
   addedFullNames: string[];
   onClose: () => void;
   /** chamado após adicionar, para recarregar a lista */
@@ -24,7 +24,7 @@ export function RepositoriesModal({
   onClose,
   onAdded,
 }: RepositoriesModalProps) {
-  // null = ainda carregando os repositórios do GitHub
+  // null quer dizer que ainda está carregando os repositórios do github
   const [available, setAvailable] = useState<GithubRepo[] | null>(null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);

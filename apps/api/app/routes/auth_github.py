@@ -30,7 +30,7 @@ async def require_auth(authorization: str = Header(None)):
 
 
 def _is_safe_frontend_url(url: str) -> bool:
-    """permite redirecionar o callback apenas para a dashborad configurado (evita open redirect)."""
+    # permite redirecionar o callback apenas para o dashboard configurado (evita open redirect).
     if not settings.UI_BASE_URL:
         return False
     ui = urlsplit(settings.UI_BASE_URL)
@@ -51,10 +51,9 @@ async def github_login(next: str | None = None):
         f"&allow_signup=true"
     )
 
-    # a dashboard passa `next` com a URL de volta para o frontend.
-    #
-    # o github devolve isso no `state` do callback, permitindo redirecionar
-    # o navegador para a UI com o token JWT no query string.
+    # a dashboard passa next com a url de volta para o frontend.
+    # o github devolve isso no state do callback, permitindo redirecionar
+    # o navegador para a ui com o token jwt na query string.
     if next:
         url += f"&state={quote(next, safe='')}"
 
@@ -82,7 +81,7 @@ async def github_callback(
     if not github_login or not github_id:
         raise HTTPException(status_code=400, detail="Unable to fetch GitHub user")
 
-    # inclui github_access_token para permitir criar issues sem persistência de DB
+    # inclui github_access_token para permitir criar issues sem persistência de banco
     jwt_token = create_jwt(
         {
             "sub": str(github_id),
@@ -91,7 +90,7 @@ async def github_callback(
         }
     )
 
-    # frontenzo: volta para o frontend com o token no query string.
+    # volta para o frontend com o token na query string.
     if state and _is_safe_frontend_url(state):
         separator = "&" if "?" in state else "?"
         return RedirectResponse(url=f"{state}{separator}token={jwt_token}")
@@ -100,8 +99,8 @@ async def github_callback(
         ui = settings.UI_BASE_URL.rstrip("/")
         return RedirectResponse(url=f"{ui}/login?token={jwt_token}")
 
-    # Fallback (extensão): a extensão monitora abas com URL começando por
-    # {base}/api/auth/github/success?token=...
+    # fallback para a extensão: ela monitora abas com url começando por
+    # api/auth/github/success
     success_url = str(request.base_url) + "api/auth/github/success?token=" + jwt_token
     return RedirectResponse(url=success_url)
 

@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { fetchMe } from "@/lib/api";
 import type { MeResponse } from "@/lib/api";
 
-/** Chave usada no localStorage para persistir a sessão. */
+/** chave usada no localStorage para persistir a sessão. */
 export const TOKEN_STORAGE_KEY = "anota_ai_token";
 
 type AuthContextValue = {
@@ -37,7 +37,7 @@ function readStoredToken(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // lê o token salvo de forma preguiçosa kk
+  // lê o token salvo de forma preguiçosa
   const [token, setToken] = useState<string | null>(readStoredToken);
   const [user, setUser] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // se o token estiver ausente ou expirado
         if (active) {
-          window.localStorage.removeItem(TOKEN_STORAGE_KEY); // encerra sessão
+          window.localStorage.removeItem(TOKEN_STORAGE_KEY); // encerra a sessão
           setToken(null);
           setUser(null);
         }

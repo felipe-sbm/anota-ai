@@ -65,7 +65,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
   const [detail, setDetail] = useState<Recording>(record)
   const [loading, setLoading] = useState(false)
 
-  // Issue creation state
+  // estado da criação de issues
   const [repos, setRepos] = useState<Repo[]>([])
   const [reposLoading, setReposLoading] = useState(false)
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
@@ -86,7 +86,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
 
   useEffect(() => {
     if (detail.tasks && detail.tasks.length > 0) {
-      // Initialize task configs from tasks
+      // inicializa as configurações das tasks a partir das tasks
       setTaskConfigs(
         detail.tasks.map((t) => ({
           title: t.title,
@@ -269,7 +269,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
       if (!response.ok) {
         const errData = await response.json().catch(() => null)
         const detail = errData?.detail || "Falha ao criar issues"
-        // Check for 403 - authorization error
+        // verifica erro de autorização (403)
         if (response.status === 403) {
           throw new Error(
             "Permissão negada pelo GitHub (403). " +
@@ -287,7 +287,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
         errors: result.errors || []
       })
 
-      // Reload record to get updated issues
+      // recarrega o registro para obter as issues atualizadas
       if (result.created_issues?.length > 0) {
         const recordResp = await fetch(
           `${API_BASE}/api/audio/records/${detail.file_id}`,
@@ -474,7 +474,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
             </section>
           )}
 
-          {/* Issue creation section - only show if tasks exist and no issues created yet */}
+          {/* seção de criação de issues, só aparece se existirem tasks e ainda não forem criadas issues */}
           {detail.tasks && detail.tasks.length > 0 && !alreadyHasIssues && (
             <section className="detail-section detail-issue-config">
               <h3 className="section-title">
@@ -492,7 +492,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
                 Enviar Issues para o GitHub
               </h3>
 
-              {/* Team selector for quick member selection */}
+              {/* seletor de equipe para a seleção rápida de membros */}
               {teams.length > 0 && (
                 <div className="issue-config-team">
                   <label className="issue-config-label">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, GitBranch, Link2, Plus } from "lucide-react";
+import { Archive, CircleDot, GitBranch, Link2, Plus } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { Transition } from "@/components/transition";
 import { RepositoriesModal } from "@/components/dashboard/modals/repositories";
+import { CreateIssueModal } from "@/components/dashboard/modals/issues";
 
 export default function RepositoriesPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function RepositoriesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [newIssueFor, setNewIssueFor] = useState<string | null>(null);
 
   async function reload(authToken: string) {
     const data = await fetchRepositories(authToken);
@@ -123,13 +125,18 @@ export default function RepositoriesPage() {
           {repos.map((repo) => (
             <article
               key={repo.full_name}
-              className="rounded-3xl border border-stone-200 bg-stone-50 p-5"
+              className="rounded-3xl border border-stone-200 bg-gradient-to-t from-stone-100 to-white p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
+                  <a
+                    href={repo.html_url ? repo.html_url : undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500"
+                  >
                     <GitBranch className="h-4 w-4" />
-                  </div>
+                  </a>
                   <div className="min-w-0 truncate text-sm font-medium text-stone-800 cursor-context-menu">
                     <Transition first={repo.name} second={repo.full_name} />
                   </div>
@@ -139,6 +146,15 @@ export default function RepositoriesPage() {
                   <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-stone-700 ring-1 ring-stone-200">
                     {repo.private ? "Privado" : "Público"}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setNewIssueFor(repo.full_name)}
+                    title={`Crear issue instantánea em ${repo.full_name}`}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-500 transition hover:bg-brand-light hover:text-brand cursor-pointer"
+                  >
+                    <CircleDot className="h-3.5 w-3.5" />
+                    Criar nova issue
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(repo.full_name)}
@@ -154,18 +170,6 @@ export default function RepositoriesPage() {
               <p className="mt-4 text-sm text-stone-600">
                 {repo.description || "Sem descrição disponível."}
               </p>
-
-              {repo.html_url ? (
-                <a
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-brand hover:text-brand-hover"
-                >
-                  <Link2 className="h-4 w-4" />
-                  Abrir no GitHub
-                </a>
-              ) : null}
             </article>
           ))}
         </div>
@@ -177,6 +181,15 @@ export default function RepositoriesPage() {
           addedFullNames={repos.map((repo) => repo.full_name)}
           onClose={() => setAddOpen(false)}
           onAdded={() => reload(token)}
+        />
+      ) : null}
+
+      {newIssueFor ? (
+        <CreateIssueModal
+          token={token}
+          repoFullName={newIssueFor}
+          onClose={() => setNewIssueFor(null)}
+          onCreate={() => reload(token)}
         />
       ) : null}
     </>

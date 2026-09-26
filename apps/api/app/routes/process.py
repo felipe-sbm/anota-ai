@@ -3,7 +3,11 @@ import os
 from fastapi import APIRouter, Depends, Header, HTTPException
 
 from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec, DecisionSpec
-from ..models.database import update_record_status
+from ..models.database import (
+    create_draft_issues_from_tasks,
+    delete_pending_drafts,
+    update_record_status,
+)
 from ..services.summarization_service import summarize_and_extract
 from ..services.mention_service import resolve_assignees_from_transcript
 
@@ -50,11 +54,11 @@ async def process_audio(
         raise HTTPException(status_code=404, detail="file_id not found")
     file_path = os.path.join(UPLOAD_DIR, candidates[0])
 
-    # Atualiza status para processing
+    # atualiza o status para processing
     if req.file_id:
         update_record_status(req.file_id, "processing")
 
-    # whisper local (é umimport tardio - o servidor não depende de torch/whisper no startup)
+    # whisper local é um import tardio, o servidor não depende de torch ou whisper no startup
     try:
         from ..services.whisper_service import transcribe_file
 
@@ -64,7 +68,7 @@ async def process_audio(
             update_record_status(req.file_id, "error", error_message=str(e))
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
-    # Resolve assignees por menções (nome/apelido)
+    # resolve assignees por menções (nome ou apelido)
     resolved_assignees = resolve_assignees_from_transcript(transcript=transcript)
 
     # sumarização e tasks
@@ -84,7 +88,7 @@ async def process_audio(
 
     created_issues = []
 
-    # Atualiza registro no banco com sucesso
+    # atualiza o registro no banco com sucesso
     if req.file_id:
         update_record_status(
             req.file_id,
@@ -96,6 +100,19 @@ async def process_audio(
             created_issues=created_issues,
             repo_full_name=req.repo_full_name or "",
         )
+
+        # cria rascunhos a partir das tasks extraídas: o sistema os cria
+        # esperando a confirmação do usuário. enquanto não são confirmadas,
+        # ficam como rascunho e não são enviadas ao github.
+        auth_login = auth.get("github_login", "")
+        if summarized.tasks and auth_login:
+            delete_pending_drafts(req.file_id, auth_login)
+            create_draft_issues_from_tasks(
+                record_id=req.file_id,
+                github_login=auth_login,
+                repo_full_name=req.repo_full_name or "",
+                tasks=[t.model_dump() for t in summarized.tasks],
+            )
 
     return ProcessAudioResponse(
         transcript=transcript,

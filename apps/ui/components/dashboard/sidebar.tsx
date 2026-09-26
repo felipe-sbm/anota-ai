@@ -8,12 +8,12 @@ import Image from "next/image";
 import {
   AudioLines,
   CircleUser,
-  FolderKanban,
   FolderGit2,
+  CircleDot,
   LayoutDashboard,
   Settings,
   Users,
-  X,
+  X
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
@@ -45,8 +45,7 @@ const navItems: NavItem[] = [
   {
     label: "Issues",
     href: "/dashboard/issues",
-    Icon: FolderKanban,
-    disabled: true,
+    Icon: CircleDot,
   },
   {
     label: "Configurações",
