@@ -65,6 +65,29 @@ async def list_github_repos(
         raise HTTPException(status_code=500, detail=f"Failed to list repos: {str(e)}")
 
 
+@app_router.get("/github/repos/{repo_full_name:path}/meta", status_code=200)
+async def get_repo_metadata(
+    repo_full_name: str,
+    auth=Depends(require_auth),
+):
+    # dados auxiliares de um repositório para a tela de criar issues:
+    # assignees, labels, milestones e projetos do repositório.
+    
+    github_access_token = auth.get("github_access_token")
+    if not github_access_token:
+        raise HTTPException(status_code=401, detail="github_access_token missing in JWT")
+
+    gh = GithubService(access_token=github_access_token)
+
+    try:
+        return gh.get_repo_meta(repo_full_name)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to load repo metadata: {str(e)}",
+        )
+
+
 @app_router.post("/issues/batch", status_code=201)
 async def create_issues_batch(
     req: CreateIssuesBatchRequest,
@@ -191,6 +214,9 @@ async def create_instant_issue(
             title=req.title,
             body=req.body or "",
             assignee=req.assignee,
+            labels=req.labels,
+            milestone_number=req.milestone,
+            project_number=req.project,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

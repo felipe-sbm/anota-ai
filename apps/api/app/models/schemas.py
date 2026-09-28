@@ -65,11 +65,14 @@ class ReviewRequest(BaseModel):
 
 class IssueCreateRequest(BaseModel):
     # cria uma issue instantânea dentro do próprio sistema
-    
+
     repo_full_name: str = Field(min_length=1)
     title: str = Field(min_length=1, max_length=256)
     body: str = ""
     assignee: Optional[str] = Field(default=None, description="GitHub login do responsável")
+    labels: List[str] = Field(default_factory=list, description="Nomes das labels do GitHub")
+    milestone: Optional[int] = Field(default=None, description="Número do milestone no repositório")
+    project: Optional[int] = Field(default=None, description="Número do projeto clássico do repositório")
     points: int = Field(default=0, ge=0, le=100, description="Pontos/importancia no sistema")
     priority: Literal["low", "medium", "high"] = "medium"
 

@@ -132,7 +132,7 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-3">
             <Image
-              src="/icons/theme/logo.webp"
+              src="/icons/theme/logo.svg"
               alt="Logo"
               width={96}
               height={32}

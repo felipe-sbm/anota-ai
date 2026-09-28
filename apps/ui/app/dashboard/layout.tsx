@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       />
 
       <div className="m-2 flex min-h-[calc(100vh-2rem)] min-w-0 flex-1 flex-col gap-4 lg:m-4 lg:ml-0">
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70">
+        <div className="flex min-w-0 flex-1 flex-col overflow-clip rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70">
           <DashboardHeader
             onOpenSidebar={() => setSidebarOpen(true)}
             onToggleSidebar={() => setSidebarCollapsed((value) => !value)}

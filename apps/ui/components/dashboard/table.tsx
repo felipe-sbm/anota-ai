@@ -17,13 +17,13 @@ import {
 import { type Issue, type IssuePriority } from "@/lib/api";
 import { Transition } from "@/components/transition";
 
-const PRIORITY_LABELS: Record<IssuePriority, string> = {
+export const PRIORITY_LABELS: Record<IssuePriority, string> = {
   low: "Baixa",
   medium: "Média",
   high: "Alta",
 };
 
-const PRIORITY_DOT: Record<IssuePriority, string> = {
+export const PRIORITY_DOT: Record<IssuePriority, string> = {
   high: "bg-red-600",
   medium: "bg-yellow-400",
   low: "bg-green-600",
@@ -147,7 +147,7 @@ function IssueRow({
               >
                 {issue.source === "anota_ai" ? (
                   <Image
-                    src="/icons/theme/icon.webp"
+                    src="/icons/theme/icon.svg"
                     alt="Ícone do Anota Aí!"
                     title="Tarefa criada por meio do Anota Aí. Obrigado por nos usar! 😊"
                     loading="lazy"

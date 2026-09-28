@@ -80,6 +80,43 @@ export type GithubRepo = {
   default_branch?: string;
 };
 
+export type RepoAssignee = {
+  login: string;
+  name?: string | null;
+  avatar_url?: string | null;
+};
+
+export type RepoLabel = {
+  name: string;
+  color: string;
+  description?: string | null;
+};
+
+export type RepoMilestone = {
+  number?: number | null;
+  title: string;
+  state?: string;
+  description?: string | null;
+  open_issues?: number;
+  closed_issues?: number;
+};
+
+export type RepoProject = {
+  id?: number | null;
+  number?: number | null;
+  name: string;
+  state?: string;
+  html_url?: string | null;
+  columns?: string[];
+};
+
+export type RepoMeta = {
+  assignees: RepoAssignee[];
+  labels: RepoLabel[];
+  milestones: RepoMilestone[];
+  projects: RepoProject[];
+};
+
 export type Repository = {
   id: string;
   full_name: string;
@@ -190,6 +227,17 @@ export async function fetchGithubRepos(token: string): Promise<GithubRepo[]> {
   return data.repos ?? [];
 }
 
+/** busca os dados auxiliares de um repositório (assignees, labels, milestones, projetos). */
+export async function fetchRepoMeta(
+  token: string,
+  repoFullName: string,
+): Promise<RepoMeta> {
+  return fetchAuthorized<RepoMeta>(
+    `/api/github/repos/${repoFullName}/meta`,
+    token,
+  );
+}
+
 export const REPOSITORIES_PATH = "/api/repositories";
 
 export async function fetchRepositories(token: string): Promise<Repository[]> {
@@ -292,6 +340,9 @@ export async function createInstantIssue(
     title: string;
     body?: string;
     assignee?: string | null;
+    labels?: string[];
+    milestone?: number | null;
+    project?: number | null;
     points: number;
     priority: IssuePriority;
   },

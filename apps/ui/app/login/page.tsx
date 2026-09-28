@@ -53,7 +53,7 @@ export default function LoginPage() {
         <div className="rounded-3xl border border-stone-200 bg-white p-8 sm:p-10">
           <div className="mb-8 flex flex-col items-center text-center">
             <Image
-              src="/icons/theme/logo.webp"
+              src="/icons/theme/logo.svg"
               alt="Logo"
               width={180}
               height={60}

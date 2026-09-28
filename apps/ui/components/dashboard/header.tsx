@@ -101,7 +101,7 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-stone-200 bg-white px-4 text-stone-900">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-stone-200 bg-white/30 px-4 text-stone-900 backdrop-blur-xs">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -115,7 +115,7 @@ export function DashboardHeader({
           <PanelLeft className="h-4 w-4" />
         </button>
         <div
-          className="hidden h-4 w-px self-center bg-stone-200 lg:block"
+          className="hidden h-6 w-px self-center bg-stone-500 lg:block rounded-full"
           aria-hidden="true"
         />
         <button

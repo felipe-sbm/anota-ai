@@ -12,7 +12,6 @@ import {
 } from "@/lib/api";
 import { Transition } from "@/components/transition";
 import { RepositoriesModal } from "@/components/dashboard/modals/repositories";
-import { CreateIssueModal } from "@/components/dashboard/modals/issues";
 
 export default function RepositoriesPage() {
   const router = useRouter();
@@ -23,7 +22,6 @@ export default function RepositoriesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [newIssueFor, setNewIssueFor] = useState<string | null>(null);
 
   async function reload(authToken: string) {
     const data = await fetchRepositories(authToken);
@@ -148,7 +146,13 @@ export default function RepositoriesPage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setNewIssueFor(repo.full_name)}
+                    onClick={() =>
+                      window.open(
+                        `/dashboard/issues/criacao?repo=${encodeURIComponent(repo.full_name)}`,
+                        "_blank",
+                        "noopener",
+                      )
+                    }
                     title={`Crear issue instantánea em ${repo.full_name}`}
                     className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-500 transition hover:bg-brand-light hover:text-brand cursor-pointer"
                   >
@@ -184,14 +188,6 @@ export default function RepositoriesPage() {
         />
       ) : null}
 
-      {newIssueFor ? (
-        <CreateIssueModal
-          token={token}
-          repoFullName={newIssueFor}
-          onClose={() => setNewIssueFor(null)}
-          onCreate={() => reload(token)}
-        />
-      ) : null}
     </>
   );
 }

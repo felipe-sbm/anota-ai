@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   Settings,
   Users,
-  X
+  X,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
@@ -94,7 +94,7 @@ export function DashboardSidebar({
           >
             {!collapsed ? (
               <Image
-                src="/icons/theme/logo.webp"
+                src="/icons/theme/logo.svg"
                 alt="Logo"
                 width={120}
                 height={40}
@@ -102,7 +102,7 @@ export function DashboardSidebar({
               />
             ) : (
               <Image
-                src="/icons/theme/icon.webp"
+                src="/icons/theme/icon.svg"
                 alt="Logo"
                 width={40}
                 height={40}
@@ -174,32 +174,6 @@ export function DashboardSidebar({
             );
           })}
         </nav>
-
-        <div
-          className={`border-t border-white/10 transition-[padding] duration-300 ease-in-out ${
-            collapsed ? "p-2" : "p-4"
-          }`}
-        >
-          <div
-            className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white">
-              <CircleUser className="h-5 w-5" />
-            </span>
-            <div
-              className={`min-w-0 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
-                collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100"
-              }`}
-            >
-              <p className="truncate text-sm font-medium">
-                {user?.name || user?.github_login || "Usuário"}
-              </p>
-              {user ? (
-                <p className="truncate text-xs">@{user.github_login}</p>
-              ) : null}
-            </div>
-          </div>
-        </div>
       </aside>
     </>
   );

@@ -49,23 +49,52 @@ class GithubService:
         title: str,
         body: str = "",
         assignee: Optional[str] = None,
+        labels: Optional[List[str]] = None,
+        milestone_number: Optional[int] = None,
+        project_number: Optional[int] = None,
     ) -> Dict[str, Any]:
-        # cria uma única issue em um repositório específico com assignee opcional.
+        # cria uma única issue em um repositório específico com assignee opcional,
+        # além de labels, milestone e projeto (adiciona um card no projeto clássico).
         from github import GithubException
         try:
             repo = self._gh.get_repo(repo_full_name)
             assignees = [assignee] if assignee else []
-            issue = repo.create_issue(
-                title=title,
-                body=body,
-                assignees=assignees,
-            )
-            return {
+
+            create_kwargs: Dict[str, Any] = {
+                "title": title,
+                "body": body,
+                "assignees": assignees,
+            }
+            if labels:
+                create_kwargs["labels"] = labels
+            if milestone_number is not None:
+                create_kwargs["milestone"] = repo.get_milestone(milestone_number)
+
+            issue = repo.create_issue(**create_kwargs)
+
+            project_name = None
+            if project_number is not None:
+                try:
+                    project_name = self._add_issue_to_project(
+                        repo, project_number, issue.id
+                    )
+                except Exception:
+                    # uma falha ao mover para o projeto não deve derrubar a issue
+                    project_name = None
+
+            result = {
                 "number": issue.number,
                 "id": issue.id,
                 "html_url": issue.html_url,
                 "repo_full_name": repo_full_name,
             }
+            if labels:
+                result["labels"] = [label.name for label in (issue.labels or [])]
+            if milestone_number is not None:
+                result["milestone"] = milestone_number
+            if project_name:
+                result["project_name"] = project_name
+            return result
         except GithubException as e:
             status = e.status if hasattr(e, 'status') else 0
             data = e.data if hasattr(e, 'data') else {}
@@ -148,3 +177,124 @@ class GithubService:
                 ),
             })
         return result
+
+    def get_repo_meta(self, repo_full_name: str) -> Dict[str, Any]:
+        # retorna os dados auxiliares de um repositório usados na tela de criação
+        # de issues: quem pode ser atribuído, labels, milestones e projetos.
+        repo = self._gh.get_repo(repo_full_name)
+
+        assignees: List[Dict[str, Any]] = []
+        try:
+            collaborators = repo.get_collaborators(affiliation="all")
+            for user in collaborators:
+                if user.login not in {item["login"] for item in assignees}:
+                    assignees.append(
+                        {
+                            "login": user.login,
+                            "name": getattr(user, "name", None),
+                            "avatar_url": getattr(user, "avatar_url", None),
+                        }
+                    )
+        except Exception:
+            # sem permissão para listar colaboradores; segue com o dono apenas
+            pass
+
+        owner = repo.owner
+        if owner is not None and owner.login not in {item["login"] for item in assignees}:
+            assignees.insert(
+                0,
+                {
+                    "login": owner.login,
+                    "name": getattr(owner, "name", None),
+                    "avatar_url": getattr(owner, "avatar_url", None),
+                },
+            )
+
+        labels: List[Dict[str, Any]] = []
+        for label in repo.get_labels():
+            labels.append(
+                {
+                    "name": label.name,
+                    "color": getattr(label, "color", None) or "808080",
+                    "description": getattr(label, "description", None),
+                }
+            )
+
+        milestones: List[Dict[str, Any]] = []
+        for milestone in repo.get_milestones(state="open"):
+            milestones.append(
+                {
+                    "number": getattr(milestone, "number", None),
+                    "title": milestone.title,
+                    "state": getattr(milestone, "state", "open"),
+                    "description": getattr(milestone, "description", None),
+                    "open_issues": getattr(milestone, "open_issues", 0),
+                    "closed_issues": getattr(milestone, "closed_issues", 0),
+                }
+            )
+
+        projects: List[Dict[str, Any]] = []
+        try:
+            for project in repo.get_projects(state="open"):
+                columns: List[str] = []
+                try:
+                    columns = [
+                        getattr(column, "name", "")
+                        for column in project.get_columns()
+                    ]
+                except Exception:
+                    columns = []
+                projects.append(
+                    {
+                        "id": getattr(project, "id", None),
+                        "number": getattr(project, "number", None),
+                        "name": project.name,
+                        "state": getattr(project, "state", "open"),
+                        "html_url": getattr(project, "html_url", None),
+                        "columns": columns,
+                    }
+                )
+        except Exception:
+            # projetos podem exigir permissão extra; não bloqueia os demais campos
+            pass
+
+        return {
+            "assignees": assignees,
+            "labels": labels,
+            "milestones": milestones,
+            "projects": projects,
+        }
+
+    def _add_issue_to_project(
+        self,
+        repo,
+        project_number: int,
+        content_id: int,
+    ) -> Optional[str]:
+        # adiciona a issue recém-criada como card em um projeto clássico do
+        # repositório, na coluna padrão de "a fazer" quando existir.
+        project = None
+        for candidate in repo.get_projects(state="open"):
+            if getattr(candidate, "number", None) == project_number:
+                project = candidate
+                break
+
+        if project is None:
+            return None
+
+        columns = list(project.get_columns())
+        if not columns:
+            return None
+
+        column = self._pick_default_column(columns)
+        column.create_card(content_id=content_id, content_type="Issue")
+        return project.name
+
+    def _pick_default_column(self, columns):
+        # dá preferência para colunas típicas de backlog/inbox dos projetos.
+        for expected in ("a fazer", "to do", "backlog", "open", "novo", "no status"):
+            for column in columns:
+                name = (getattr(column, "name", "") or "").strip().lower()
+                if name == expected:
+                    return column
+        return columns[0]

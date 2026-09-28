@@ -56,7 +56,7 @@ export function Header() {
         <div className="flex items-center gap-10">
           <a className="cursor-pointer">
             <Image
-              src="/icons/theme/logo.webp"
+              src="/icons/theme/logo.svg"
               alt="Logo"
               width={150}
               height={50}

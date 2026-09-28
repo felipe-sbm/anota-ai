@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FolderKanban, TriangleAlert } from "lucide-react";
+import { FolderKanban, Plus, TriangleAlert } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
 import {
@@ -219,6 +220,15 @@ export default function IssuesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/dashboard/issues/criacao"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-hover"
+          >
+            <Plus className="h-4 w-4" />
+            Criar issue
+          </Link>
           {pendingDrafts.length > 0 ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
               <TriangleAlert className="h-3.5 w-3.5" />
