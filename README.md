@@ -151,6 +151,7 @@ O projeto está em desenvolvimento (🚧), com previsão para terminar em outubr
 * [x] Identificação de responsáveis
 * [x] Fluxo de revisão das informações
 * [x] Criação de GitHub Issues
+* [x] Página de Sprints (sprint backlog, Story Points, progresso e burndown)
 * [ ] Dashboard para visualização dos resultados
 * [ ] Escrever o TCC...
 
@@ -163,6 +164,5 @@ Algumas funcionalidades poderão ser investigadas posteriormente (depois da apre
 * [ ] Identificação automática dos participantes da reunião
 * [ ] Diarização de áudio
 * [ ] Integração com outras plataformas de gerenciamento de projetos (talvez, bem talvez mesmo)
-* [ ] Recursos relacionados a Scrum
-* [ ] Métricas e acompanhamento do trabalho
+* [ ] Planning Poker, gestão de cerimônias e Kanban (scrum completo)
 * [ ] Suporte aprimorado a diferentes navegadores (como o safari)

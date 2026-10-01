@@ -7,6 +7,7 @@ from ..models.database import (
     create_draft_issues_from_tasks,
     delete_pending_drafts,
     update_record_status,
+        get_user_project,
 )
 from ..services.summarization_service import summarize_and_extract
 from ..services.mention_service import resolve_assignees_from_transcript
@@ -99,12 +100,15 @@ async def process_audio(
             decisions=[decision.model_dump() for decision in summarized.decisions],
             created_issues=created_issues,
             repo_full_name=req.repo_full_name or "",
+            project_id=req.project_id,
         )
 
         # cria rascunhos a partir das tasks extraídas: o sistema os cria
         # esperando a confirmação do usuário. enquanto não são confirmadas,
         # ficam como rascunho e não são enviadas ao github.
         auth_login = auth.get("github_login", "")
+        if req.project_id and get_user_project(req.project_id, auth_login) is None:
+            raise HTTPException(status_code=400, detail="Projeto não encontrado")
         if summarized.tasks and auth_login:
             delete_pending_drafts(req.file_id, auth_login)
             create_draft_issues_from_tasks(
@@ -112,6 +116,7 @@ async def process_audio(
                 github_login=auth_login,
                 repo_full_name=req.repo_full_name or "",
                 tasks=[t.model_dump() for t in summarized.tasks],
+                project_id=req.project_id,
             )
 
     return ProcessAudioResponse(

@@ -33,3 +33,11 @@ async def github_get_user(access_token: str) -> dict:
     r.raise_for_status()
     return r.json()
 
+
+async def github_get_user_by_login(access_token: str, github_login: str) -> dict:
+    headers = {"Authorization": f"Bearer {access_token}", "Accept": "application/vnd.github+json"}
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.get(f"https://api.github.com/users/{github_login}", headers=headers)
+    r.raise_for_status()
+    return r.json()
+

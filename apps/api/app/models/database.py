@@ -5,7 +5,7 @@ import os
 import re
 import sqlite3
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -46,6 +46,8 @@ def init_db():
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(audio_records)")}
     if "decisions" not in columns:
         conn.execute("ALTER TABLE audio_records ADD COLUMN decisions TEXT")
+    if "project_id" not in columns:
+        conn.execute("ALTER TABLE audio_records ADD COLUMN project_id TEXT")
 
     conn.execute(
         """
@@ -101,6 +103,37 @@ def init_db():
 
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS projects (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            created_by_github_login TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS project_repositories (
+            project_id TEXT NOT NULL,
+            repo_full_name TEXT NOT NULL,
+            PRIMARY KEY (project_id, repo_full_name)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS project_teams (
+            project_id TEXT NOT NULL,
+            team_id TEXT NOT NULL,
+            PRIMARY KEY (project_id, team_id)
+        )
+        """
+    )
+
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS issues (
             id TEXT PRIMARY KEY,
             github_issue_id INTEGER,
@@ -122,6 +155,9 @@ def init_db():
         )
         """
     )
+    issue_columns = {row["name"] for row in conn.execute("PRAGMA table_info(issues)")}
+    if "project_id" not in issue_columns:
+        conn.execute("ALTER TABLE issues ADD COLUMN project_id TEXT")
     conn.execute(
         """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_issues_github_issue
@@ -131,6 +167,52 @@ def init_db():
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_issues_user ON issues(created_by_github_login)"
+    )
+
+    # sprints e seus itens (modelo enxuto de scrum para o TCC):
+    # a sprint guarda nome, objetivo, período e status; cada tarefa guarda os
+    # pontos, o responsável, a origem (reunião/manual) e os vínculos opcionais
+    # com uma gravação (record_id) e com uma issue do sistema (issue_id).
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sprints (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            goal TEXT NOT NULL DEFAULT '',
+            start_date TEXT NOT NULL,
+            end_date TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'planned',
+            created_by_github_login TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sprint_tasks (
+            id TEXT PRIMARY KEY,
+            sprint_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            assignee TEXT,
+            points INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'todo',
+            origin TEXT NOT NULL DEFAULT 'manual',
+            record_id TEXT,
+            issue_id TEXT,
+            created_by_github_login TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            completed_at TEXT
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sprint_tasks_sprint ON sprint_tasks(sprint_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sprints_user ON sprints(created_by_github_login)"
     )
 
     conn.commit()
@@ -171,6 +253,7 @@ def update_record_status(record_id: str, status: str, **kwargs):
         "error_message",
         "status",
         "repo_full_name",
+        "project_id",
     }
     sets = ["status = ?"]
     values = [status]
@@ -479,6 +562,7 @@ def create_issue_row(
     number: Optional[int] = None,
     html_url: Optional[str] = None,
     record_id: Optional[str] = None,
+    project_id: Optional[str] = None,
 ) -> dict:
     # os pontos/prioridade vivem no sistema, pois o GitHub não os armazena
     # (github_issue_id é o vínculo com a issue real).
@@ -490,9 +574,9 @@ def create_issue_row(
         INSERT INTO issues (
             id, github_issue_id, number, title, body, state, repo_full_name,
             source, points, priority, priority_source, assignee, html_url,
-            record_id, created_by_github_login, created_at, updated_at
+            record_id, project_id, created_by_github_login, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             issue_id,
@@ -509,6 +593,7 @@ def create_issue_row(
             assignee,
             html_url,
             record_id,
+            project_id,
             github_login,
             now,
             now,
@@ -728,6 +813,7 @@ def create_draft_issues_from_tasks(
     github_login: str,
     repo_full_name: str,
     tasks: list[Dict[str, Any]],
+    project_id: Optional[str] = None,
 ) -> list[dict]:
     # cria rascunhos a partir das tasks extraídas de uma reunião.
     # as issues rascunho ficam aguardando confirmação do usuário e
@@ -749,9 +835,9 @@ def create_draft_issues_from_tasks(
             INSERT INTO issues (
                 id, title, body, state, repo_full_name, source, points,
                 priority, priority_source, assignee, record_id,
-                created_by_github_login, created_at, updated_at
+                project_id, created_by_github_login, created_at, updated_at
             )
-            VALUES (?, ?, ?, 'open', ?, 'draft', ?, ?, 'system', ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, 'open', ?, 'draft', ?, ?, 'system', ?, ?, ?, ?, ?, ?)
             """,
             (
                 issue_id,
@@ -762,6 +848,7 @@ def create_draft_issues_from_tasks(
                 _clamp_priority(task.get("priority")),
                 first_assignee,
                 record_id,
+                project_id,
                 github_login,
                 now,
                 now,
@@ -863,3 +950,489 @@ def append_created_issue_to_record(file_id: str, meta: Dict[str, Any]) -> None:
     )
     conn.commit()
     conn.close()
+
+
+# projetos (reúne repositórios, equipes, gravações e issues)
+
+def create_project(project_id: str, github_login: str, name: str, description: str = "") -> dict:
+    conn = _get_conn()
+    now = datetime.utcnow().isoformat()
+    conn.execute(
+        "INSERT INTO projects (id, name, description, created_by_github_login, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (project_id, name, description, github_login, now, now),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else {}
+
+
+def get_user_project(project_id: str, github_login: str) -> Optional[dict]:
+    conn = _get_conn()
+    row = conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND created_by_github_login = ?",
+        (project_id, github_login),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def list_user_projects(github_login: str) -> list[dict]:
+    conn = _get_conn()
+    rows = conn.execute(
+        "SELECT * FROM projects WHERE created_by_github_login = ? ORDER BY updated_at DESC",
+        (github_login,),
+    ).fetchall()
+    result = []
+    for row in rows:
+        project = dict(row)
+        project["repositories"] = [r["repo_full_name"] for r in conn.execute(
+            "SELECT repo_full_name FROM project_repositories WHERE project_id = ? ORDER BY repo_full_name",
+            (project["id"],),
+        ).fetchall()]
+        project["team_ids"] = [r["team_id"] for r in conn.execute(
+            "SELECT team_id FROM project_teams WHERE project_id = ? ORDER BY team_id",
+            (project["id"],),
+        ).fetchall()]
+        project["record_count"] = conn.execute(
+            "SELECT COUNT(*) FROM audio_records WHERE project_id = ? AND user_github_login = ?",
+            (project["id"], github_login),
+        ).fetchone()[0]
+        issue_count_sql = "SELECT COUNT(*) FROM issues WHERE created_by_github_login = ? AND project_id = ?"
+        issue_count_values: list[Any] = [github_login, project["id"]]
+        if project["repositories"]:
+            placeholders = ", ".join("?" for _ in project["repositories"])
+            issue_count_sql = f"SELECT COUNT(*) FROM issues WHERE created_by_github_login = ? AND (project_id = ? OR repo_full_name IN ({placeholders}))"
+            issue_count_values.extend(project["repositories"])
+        project["issue_count"] = conn.execute(issue_count_sql, issue_count_values).fetchone()[0]
+        result.append(project)
+    conn.close()
+    return result
+
+
+def update_project(project_id: str, github_login: str, **fields) -> Optional[dict]:
+    allowed = {"name", "description"}
+    sets = [f"{key} = ?" for key in fields if key in allowed]
+    values = [fields[key] for key in fields if key in allowed]
+    if sets:
+        values.extend([datetime.utcnow().isoformat(), project_id, github_login])
+        conn = _get_conn()
+        conn.execute(
+            f"UPDATE projects SET {', '.join(sets)}, updated_at = ? WHERE id = ? AND created_by_github_login = ?",
+            values,
+        )
+        conn.commit()
+        conn.close()
+    return get_user_project(project_id, github_login)
+
+
+def delete_user_project(project_id: str, github_login: str) -> bool:
+    conn = _get_conn()
+    conn.execute("UPDATE audio_records SET project_id = NULL WHERE project_id = ?", (project_id,))
+    conn.execute("UPDATE issues SET project_id = NULL WHERE project_id = ?", (project_id,))
+    conn.execute("DELETE FROM project_repositories WHERE project_id = ?", (project_id,))
+    conn.execute("DELETE FROM project_teams WHERE project_id = ?", (project_id,))
+    cursor = conn.execute(
+        "DELETE FROM projects WHERE id = ? AND created_by_github_login = ?",
+        (project_id, github_login),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0
+
+
+def replace_project_links(project_id: str, github_login: str, repositories: list[str], team_ids: list[str]) -> bool:
+    if get_user_project(project_id, github_login) is None:
+        return False
+    conn = _get_conn()
+    conn.execute("DELETE FROM project_repositories WHERE project_id = ?", (project_id,))
+    conn.execute("DELETE FROM project_teams WHERE project_id = ?", (project_id,))
+    conn.executemany(
+        "INSERT OR IGNORE INTO project_repositories (project_id, repo_full_name) VALUES (?, ?)",
+        [(project_id, repo) for repo in repositories],
+    )
+    conn.executemany(
+        "INSERT OR IGNORE INTO project_teams (project_id, team_id) VALUES (?, ?)",
+        [(project_id, team_id) for team_id in team_ids],
+    )
+    conn.execute("UPDATE projects SET updated_at = ? WHERE id = ?", (datetime.utcnow().isoformat(), project_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_project_detail(project_id: str, github_login: str) -> Optional[dict]:
+    project = get_user_project(project_id, github_login)
+    if project is None:
+        return None
+    conn = _get_conn()
+    project["repositories"] = [r["repo_full_name"] for r in conn.execute(
+        "SELECT repo_full_name FROM project_repositories WHERE project_id = ? ORDER BY repo_full_name",
+        (project_id,),
+    ).fetchall()]
+    project["team_ids"] = [r["team_id"] for r in conn.execute(
+        "SELECT team_id FROM project_teams WHERE project_id = ? ORDER BY team_id",
+        (project_id,),
+    ).fetchall()]
+    repo_names = project["repositories"]
+    issue_filter = "i.project_id = ?"
+    issue_values: list[Any] = [project_id]
+    if repo_names:
+        placeholders = ", ".join("?" for _ in repo_names)
+        issue_filter = f"({issue_filter} OR i.repo_full_name IN ({placeholders}))"
+        issue_values.extend(repo_names)
+    project["records"] = [_row_to_dict(row) for row in conn.execute(
+        "SELECT * FROM audio_records WHERE project_id = ? AND user_github_login = ? ORDER BY created_at DESC",
+        (project_id, github_login),
+    ).fetchall()]
+    project["issues"] = [dict(row) for row in conn.execute(
+        f"SELECT i.* FROM issues i WHERE i.created_by_github_login = ? AND {issue_filter} ORDER BY i.updated_at DESC",
+        [github_login, *issue_values],
+    ).fetchall()]
+    project["team_members"] = [dict(row) for row in conn.execute(
+        "SELECT DISTINCT COALESCE(ua.display_name, tm.github_login) AS name, '@' || tm.github_login AS user_name, tm.github_login AS team_github_login, t.name AS team_name FROM team_members tm JOIN project_teams pt ON pt.team_id = tm.team_id JOIN teams t ON t.id = tm.team_id LEFT JOIN user_aliases ua ON ua.github_login = tm.github_login AND ua.alias = tm.github_login WHERE pt.project_id = ? ORDER BY tm.github_login",
+        (project_id,),
+    ).fetchall()]
+    conn.close()
+    return project
+
+
+def attach_record_to_project(record_id: str, project_id: Optional[str], github_login: str) -> Optional[dict]:
+    conn = _get_conn()
+    if project_id and get_user_project(project_id, github_login) is None:
+        conn.close()
+        return None
+    conn.execute(
+        "UPDATE audio_records SET project_id = ? WHERE id = ? AND user_github_login = ?",
+        (project_id, record_id, github_login),
+    )
+    conn.execute(
+        "UPDATE issues SET project_id = ? WHERE record_id = ? AND created_by_github_login = ?",
+        (project_id, record_id, github_login),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM audio_records WHERE id = ?", (record_id,)).fetchone()
+    conn.close()
+    return _row_to_dict(row) if row else None
+
+
+def attach_issue_to_project(issue_id: str, project_id: Optional[str], github_login: str) -> Optional[dict]:
+    conn = _get_conn()
+    if project_id and get_user_project(project_id, github_login) is None:
+        conn.close()
+        return None
+    conn.execute(
+        "UPDATE issues SET project_id = ?, updated_at = ? WHERE id = ? AND created_by_github_login = ?",
+        (project_id, datetime.utcnow().isoformat(), issue_id, github_login),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM issues WHERE id = ? AND created_by_github_login = ?", (issue_id, github_login)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# sprints (scrum enxuto do TCC)
+
+_SPRINT_STATUS = ("planned", "active", "completed")
+_SPRINT_TASK_STATUS = ("todo", "in_progress", "done")
+_SPRINT_TASK_ORIGIN = ("meeting", "manual")
+
+
+def create_sprint(
+    *,
+    sprint_id: str,
+    github_login: str,
+    name: str,
+    goal: str = "",
+    start_date: str,
+    end_date: str,
+    status: str = "planned",
+) -> dict:
+    conn = _get_conn()
+    now = datetime.utcnow().isoformat()
+    safe_status = status if status in _SPRINT_STATUS else "planned"
+    conn.execute(
+        """
+        INSERT INTO sprints (
+            id, name, goal, start_date, end_date, status,
+            created_by_github_login, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            sprint_id,
+            name,
+            goal,
+            start_date,
+            end_date,
+            safe_status,
+            github_login,
+            now,
+            now,
+        ),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
+    conn.close()
+    return dict(row) if row is not None else {}
+
+
+def get_user_sprint(sprint_id: str, github_login: str) -> Optional[dict]:
+    conn = _get_conn()
+    row = conn.execute(
+        "SELECT * FROM sprints WHERE id = ? AND created_by_github_login = ?",
+        (sprint_id, github_login),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row is not None else None
+
+
+def list_user_sprints(github_login: str) -> list[dict]:
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT * FROM sprints
+        WHERE created_by_github_login = ?
+        ORDER BY start_date DESC, created_at DESC
+        """,
+        (github_login,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def update_sprint_fields(sprint_id: str, github_login: str, **fields) -> Optional[dict]:
+    allowed = {"name", "goal", "start_date", "end_date", "status"}
+    sets = []
+    values: list[Any] = []
+    for key, value in fields.items():
+        if key not in allowed:
+            continue
+        if key == "status":
+            value = value if value in _SPRINT_STATUS else "planned"
+        sets.append(f"{key} = ?")
+        values.append(value)
+
+    if not sets:
+        return get_user_sprint(sprint_id, github_login)
+
+    values.append(datetime.utcnow().isoformat())
+    values.extend([sprint_id, github_login])
+    conn = _get_conn()
+    conn.execute(
+        f"UPDATE sprints SET {', '.join(sets)}, updated_at = ? "
+        "WHERE id = ? AND created_by_github_login = ?",
+        values,
+    )
+    conn.commit()
+    conn.close()
+    return get_user_sprint(sprint_id, github_login)
+
+
+def delete_user_sprint(sprint_id: str, github_login: str) -> bool:
+    conn = _get_conn()
+    conn.execute(
+        "DELETE FROM sprint_tasks WHERE sprint_id = ? AND created_by_github_login = ?",
+        (sprint_id, github_login),
+    )
+    cursor = conn.execute(
+        "DELETE FROM sprints WHERE id = ? AND created_by_github_login = ?",
+        (sprint_id, github_login),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0
+
+
+def create_sprint_task(
+    *,
+    task_id: str,
+    sprint_id: str,
+    github_login: str,
+    title: str,
+    description: str = "",
+    assignee: Optional[str] = None,
+    points: int = 0,
+    status: str = "todo",
+    origin: str = "manual",
+    record_id: Optional[str] = None,
+    issue_id: Optional[str] = None,
+) -> Optional[dict]:
+    # a tarefa só existe se a sprint pertence ao usuário autenticado.
+    sprint = get_user_sprint(sprint_id, github_login)
+    if sprint is None:
+        return None
+
+    conn = _get_conn()
+    now = datetime.utcnow().isoformat()
+    safe_status = status if status in _SPRINT_TASK_STATUS else "todo"
+    safe_origin = origin if origin in _SPRINT_TASK_ORIGIN else "manual"
+    conn.execute(
+        """
+        INSERT INTO sprint_tasks (
+            id, sprint_id, title, description, assignee, points, status, origin,
+            record_id, issue_id, created_by_github_login, created_at, updated_at,
+            completed_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            task_id,
+            sprint_id,
+            title,
+            description,
+            assignee,
+            _clamp_points(points),
+            safe_status,
+            safe_origin,
+            record_id,
+            issue_id,
+            github_login,
+            now,
+            now,
+            now if safe_status == "done" else None,
+        ),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM sprint_tasks WHERE id = ?", (task_id,)).fetchone()
+    conn.close()
+    return dict(row) if row is not None else None
+
+
+def get_user_sprint_task(task_id: str, github_login: str) -> Optional[dict]:
+    # garante que a task pertence ao usuário e a uma sprint dele também.
+    conn = _get_conn()
+    row = conn.execute(
+        """
+        SELECT st.*
+        FROM sprint_tasks st
+        JOIN sprints s ON s.id = st.sprint_id
+        WHERE st.id = ? AND st.created_by_github_login = ?
+              AND s.created_by_github_login = ?
+        """,
+        (task_id, github_login, github_login),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row is not None else None
+
+
+def list_sprint_tasks(sprint_id: str, github_login: str) -> list[dict]:
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT * FROM sprint_tasks
+        WHERE sprint_id = ? AND created_by_github_login = ?
+        ORDER BY (status = 'done') ASC, (status = 'in_progress') DESC,
+                 points DESC, created_at ASC
+        """,
+        (sprint_id, github_login),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def update_sprint_task_fields(task_id: str, github_login: str, **fields) -> Optional[dict]:
+    allowed = {
+        "title",
+        "description",
+        "assignee",
+        "points",
+        "status",
+        "origin",
+        "record_id",
+        "issue_id",
+    }
+    sets = []
+    values: list[Any] = []
+    for key, value in fields.items():
+        if key not in allowed:
+            continue
+        if key == "points":
+            value = _clamp_points(value)
+        elif key == "origin":
+            value = value if value in _SPRINT_TASK_ORIGIN else "manual"
+        elif key == "status":
+            if value not in _SPRINT_TASK_STATUS:
+                continue
+            # ao concluir (done) registra quando; ao reabrir zera o marcador.
+            sets.append("status = ?")
+            values.append(value)
+            sets.append("completed_at = ?")
+            values.append(datetime.utcnow().isoformat() if value == "done" else None)
+            continue
+        sets.append(f"{key} = ?")
+        values.append(value)
+
+    if not sets:
+        return get_user_sprint_task(task_id, github_login)
+
+    values.append(datetime.utcnow().isoformat())
+    values.extend([task_id, github_login])
+    conn = _get_conn()
+    conn.execute(
+        f"UPDATE sprint_tasks SET {', '.join(sets)}, updated_at = ? "
+        "WHERE id = ? AND created_by_github_login = ?",
+        values,
+    )
+    conn.commit()
+    conn.close()
+    return get_user_sprint_task(task_id, github_login)
+
+
+def delete_user_sprint_task(task_id: str, github_login: str) -> bool:
+    conn = _get_conn()
+    cursor = conn.execute(
+        "DELETE FROM sprint_tasks WHERE id = ? AND created_by_github_login = ?",
+        (task_id, github_login),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0
+
+
+def build_burndown(sprint: dict, tasks: list[dict]) -> list[dict]:
+    # série de trabalho restante por dia da sprint:
+    #   remaining -> total de pontos menos os concluídos até o dia (linha real);
+    #   ideal     -> reta do total no início até 0 no fim (linha ideal).
+    # como o GitHub não guarda pontuação, os pontos vivem no sistema.
+    total = sum(_clamp_points(t.get("points")) for t in tasks)
+
+    def parse_date(value) -> datetime:
+        if not value:
+            return datetime.utcnow()
+        try:
+            return datetime.fromisoformat(str(value)[:10])
+        except (TypeError, ValueError):
+            return datetime.utcnow()
+
+    start = parse_date(sprint.get("start_date"))
+    end = parse_date(sprint.get("end_date"))
+    if end < start:
+        start, end = end, start
+
+    day_count = max(1, (end - start).days + 1)
+
+    completed_by_day: Dict[str, int] = {}
+    for t in tasks:
+        if t.get("status") == "done" and t.get("completed_at"):
+            day = str(t["completed_at"])[:10]
+            completed_by_day[day] = completed_by_day.get(day, 0) + _clamp_points(
+                t.get("points")
+            )
+
+    series = []
+    for day_index in range(day_count):
+        day = (start + timedelta(days=day_index)).isoformat()[:10]
+        done_until = sum(
+            points for key, points in completed_by_day.items() if key <= day
+        )
+        remaining = max(0, total - done_until)
+        ideal = total if day_count == 1 else total * (1 - day_index / (day_count - 1))
+        series.append(
+            {
+                "date": day,
+                "remaining": round(remaining, 1),
+                "ideal": round(ideal, 1),
+            }
+        )
+    return series

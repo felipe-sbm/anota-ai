@@ -137,6 +137,7 @@ export function Footer() {
               width={96}
               height={32}
               className="h-6 w-auto"
+              loading="eager"
             />
           </div>
         </div>

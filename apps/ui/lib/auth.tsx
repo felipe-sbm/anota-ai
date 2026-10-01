@@ -10,8 +10,10 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 
+import { isDemoRoute } from "@/lib/demo";
 import { fetchMe } from "@/lib/api";
 import type { MeResponse } from "@/lib/api";
+import { DEMO_TOKEN } from "@/lib/demo-data";
 
 /** chave usada no localStorage para persistir a sessão. */
 export const TOKEN_STORAGE_KEY = "anota_ai_token";
@@ -47,6 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     async function loadUser(currentToken: string | null) {
+      // modo demo: quando navegamos por /demo/* entramos sempre com o token
+      // de demo, mesmo se houver outro token guardado, para isolar a demo
+      // da API real.
+      if (isDemoRoute() && currentToken !== DEMO_TOKEN) {
+        setToken(DEMO_TOKEN);
+        return;
+      }
+
       if (!currentToken) {
         setUser(null);
         setLoading(false);

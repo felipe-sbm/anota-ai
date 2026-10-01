@@ -10,6 +10,7 @@ class ProcessAudioRequest(BaseModel):
 
     # se a extensão enviar file_id
     file_id: Optional[str] = Field(default=None)
+    project_id: Optional[str] = Field(default=None)
 
 
 class TaskSpec(BaseModel):
@@ -86,9 +87,69 @@ class IssueUpdateRequest(BaseModel):
     assignee: Optional[str] = None
     points: Optional[int] = Field(default=None, ge=0, le=100)
     priority: Optional[Literal["low", "medium", "high"]] = None
+    project_id: Optional[str] = None
+
+
+class ProjectCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = ""
+    repositories: List[str] = Field(default_factory=list)
+    team_ids: List[str] = Field(default_factory=list)
+
+
+class ProjectUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    description: Optional[str] = None
+    repositories: Optional[List[str]] = None
+    team_ids: Optional[List[str]] = None
+
+
+class ProjectLinkRequest(BaseModel):
+    project_id: Optional[str] = None
 
 
 class ConfirmIssuesRequest(BaseModel):
     # confirma rascunhos e os envia ao GitHub como issues reais
     
     issue_ids: List[str] = Field(min_length=1, max_length=100)
+
+
+class SprintCreateRequest(BaseModel):
+    # cria uma sprint (scrum enxuto: nome, objetivo e período)
+    name: str = Field(min_length=1, max_length=120)
+    goal: str = ""
+    start_date: str = Field(min_length=10, max_length=10, description="Formato YYYY-MM-DD")
+    end_date: str = Field(min_length=10, max_length=10, description="Formato YYYY-MM-DD")
+    status: Literal["planned", "active", "completed"] = "planned"
+
+
+class SprintUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    goal: Optional[str] = None
+    start_date: Optional[str] = Field(default=None, min_length=10, max_length=10)
+    end_date: Optional[str] = Field(default=None, min_length=10, max_length=10)
+    status: Optional[Literal["planned", "active", "completed"]] = None
+
+
+class SprintTaskCreateRequest(BaseModel):
+    # item do sprint backlog; pode vir de reunião (record_id) ou ser manual; o
+    # issue_id vincula a tarefa com uma issue existente no sistema/GitHub.
+    title: str = Field(min_length=1, max_length=256)
+    description: str = ""
+    assignee: Optional[str] = Field(default=None, description="GitHub login do responsável")
+    points: int = Field(default=0, ge=0, le=100)
+    status: Literal["todo", "in_progress", "done"] = "todo"
+    origin: Literal["meeting", "manual"] = "manual"
+    record_id: Optional[str] = None
+    issue_id: Optional[str] = None
+
+
+class SprintTaskUpdateRequest(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=256)
+    description: Optional[str] = None
+    assignee: Optional[str] = None
+    points: Optional[int] = Field(default=None, ge=0, le=100)
+    status: Optional[Literal["todo", "in_progress", "done"]] = None
+    origin: Optional[Literal["meeting", "manual"]] = None
+    record_id: Optional[str] = None
+    issue_id: Optional[str] = None

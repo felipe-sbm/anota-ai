@@ -22,12 +22,22 @@ export function Header() {
             <span>Buscar</span>
           </a>
           {docsLinks.map((label) => (
-            <a
-              key={label}
-              className="cursor-pointer font-normal text-stone-700 transition-colors hover:text-brand"
-            >
-              {label}
-            </a>
+            label === "Ver Demonstração" ? (
+              <Link
+                key={label}
+                href="/demo"
+                className="cursor-pointer font-normal text-stone-700 transition-colors hover:text-brand"
+              >
+                {label}
+              </Link>
+            ) : (
+              <a
+                key={label}
+                className="cursor-pointer font-normal text-stone-700 transition-colors hover:text-brand"
+              >
+                {label}
+              </a>
+            )
           ))}
           <span className="text-stone-300">|</span>
           {accountLinks.map((link) =>
@@ -61,6 +71,8 @@ export function Header() {
               width={150}
               height={50}
               className="h-12 w-auto"
+          
+              loading="eager"
             />
           </a>
           <nav className="hidden items-center gap-8 text-[15px] font-medium text-stone-700 lg:flex">

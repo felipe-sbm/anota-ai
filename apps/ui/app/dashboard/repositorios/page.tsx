@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, CircleDot, GitBranch, Link2, Plus } from "lucide-react";
+import { Archive, GitBranch, Plus } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
 import {
@@ -136,7 +136,7 @@ export default function RepositoriesPage() {
                     <GitBranch className="h-4 w-4" />
                   </a>
                   <div className="min-w-0 truncate text-sm font-medium text-stone-800 cursor-context-menu">
-                    <Transition first={repo.name} second={repo.full_name} />
+                    <Transition first={repo.name} second={repo.full_name.length > 45? `${repo.full_name.slice(0, 45)}...` : repo.full_name} />
                   </div>
                 </div>
 
@@ -144,21 +144,6 @@ export default function RepositoriesPage() {
                   <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-stone-700 ring-1 ring-stone-200">
                     {repo.private ? "Privado" : "Público"}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      window.open(
-                        `/dashboard/issues/criacao?repo=${encodeURIComponent(repo.full_name)}`,
-                        "_blank",
-                        "noopener",
-                      )
-                    }
-                    title={`Crear issue instantánea em ${repo.full_name}`}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-500 transition hover:bg-brand-light hover:text-brand cursor-pointer"
-                  >
-                    <CircleDot className="h-3.5 w-3.5" />
-                    Criar nova issue
-                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(repo.full_name)}
@@ -187,7 +172,6 @@ export default function RepositoriesPage() {
           onAdded={() => reload(token)}
         />
       ) : null}
-
     </>
   );
 }

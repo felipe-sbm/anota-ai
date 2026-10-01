@@ -4,7 +4,6 @@ import { useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import {
   Bold,
-  CircleHelp,
   Code,
   Eye,
   Heading1,
@@ -472,15 +471,21 @@ export function MarkdownEditor({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
-      <div className="flex flex-wrap items-center gap-1 border-b border-stone-200 bg-stone-100 px-2 py-1.5">
-        <div className="flex items-center rounded-full bg-stone-200/70 p-0.5 text-xs font-medium">
+      <div className="flex flex-wrap items-center gap-1 border-b border-stone-200 bg-gradient-to-b from-stone-100 to-stone-200/70 px-2 py-1.5">
+        <div className="relative grid grid-cols-2 rounded-full border border-stone-300 bg-stone-200/70 p-0.5 text-xs font-medium">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0.5 left-0.5 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(${view === "write" ? 0 : 100}%)` }}
+          />
+
           <button
             type="button"
             onClick={() => setView("write")}
             aria-pressed={view === "write"}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition cursor-pointer ${
+            className={`relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1 transition cursor-pointer ${
               view === "write"
-                ? "bg-white text-stone-800"
+                ? "text-stone-800"
                 : "text-stone-500 hover:text-stone-700"
             }`}
           >
@@ -491,9 +496,9 @@ export function MarkdownEditor({
             type="button"
             onClick={() => setView("preview")}
             aria-pressed={view === "preview"}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition cursor-pointer ${
+            className={`relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1 transition cursor-pointer ${
               view === "preview"
-                ? "bg-white text-stone-800"
+                ? "text-stone-800"
                 : "text-stone-500 hover:text-stone-700"
             }`}
           >

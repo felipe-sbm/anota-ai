@@ -34,7 +34,7 @@ export function Transition({
     transitionDuration: `${duration}ms`,
   });
 
-  /** esta modificação da v0.0.17  utiliza `overflow-hidden` para cortar qualquer porção que ultrapasse os limites!
+  /** esta modificação da v0.0.18  utiliza `overflow-hidden` para cortar qualquer porção que ultrapasse os limites!
   *
   * O texto que estiver sendo usado ao passar o mouse é colocado de forma "absoluta" e, portanto,
   * não afeta a largura. Se fosse mais longo que o texto original, o último caractere ficaria invisível.
@@ -43,7 +43,7 @@ export function Transition({
   const stageWidthText = toChars(second.length > first.length ? second : first).join("");
 
   return (
-    <span className="text-left">
+    <span className="text-left leading-tight">
       <span className="sr-only">
         {first}
         {second ? ` (@${second})` : ""}

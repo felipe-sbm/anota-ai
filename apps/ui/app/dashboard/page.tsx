@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import type { AudioRecord, DashboardSummary, TeamResponse } from "@/lib/api";
 import { fetchDashboardSummary } from "@/lib/api";
+import { routeHref } from "@/lib/demo";
 
 function DashboardStat({
   label,
@@ -29,7 +30,7 @@ function DashboardStat({
       <div className="mb-4 flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
         <Icon className="h-4 w-4" />
       </div>
-      <p className="text-2xl font-semibold text-stone-900">{value}</p>
+      <p className="text-2xl font-semibold text-stone-600">{value}</p>
       <p className="mt-1 text-sm text-stone-500">{label}</p>
     </div>
   );
@@ -180,7 +181,7 @@ export default function DashboardPage() {
                 <button
                   key={record.id}
                   type="button"
-                  onClick={() => router.push(`/dashboard/gravacoes/${record.id}`)}
+                  onClick={() => router.push(routeHref(`/dashboard/gravacoes/${record.id}`))}
                   className="flex w-full flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between transition hover:border-stone-300 hover:bg-stone-50 cursor-pointer"
                 >
                   <div className="min-w-0">
