@@ -19,6 +19,48 @@ def _get_conn() -> sqlite3.Connection:
     return conn
 
 
+# ---------------------------------------------------------------------------
+# vocabulário canônico de estados de uma gravação (extensão, API e dashboard)
+# ---------------------------------------------------------------------------
+RECORDING_STATUSES = ("uploaded", "processing", "pending_review", "reviewed", "error")
+
+RECORDING_STATUS_LABELS = {
+    "uploaded": "Enviada",
+    "processing": "Procesando",
+    "pending_review": "Lista para revisar",
+    "reviewed": "Revisada",
+    "error": "Error",
+}
+
+
+def normalize_record_status(status: str) -> str:
+    normalized = str(status or "uploaded").strip().lower()
+    return normalized if normalized in RECORDING_STATUSES else "uploaded"
+
+
+# ---------------------------------------------------------------------------
+# tipos de eventos de uma issue (histórico real para as métricas)
+# ---------------------------------------------------------------------------
+EVENT_ISSUE_CREATED = "issue_created"
+EVENT_ISSUE_UPDATED = "issue_updated"
+EVENT_ISSUE_STATE_CHANGED = "issue_state_changed"
+EVENT_ISSUE_ASSIGNED = "issue_assigned"
+EVENT_ISSUE_POINTS_CHANGED = "issue_points_changed"
+EVENT_ISSUE_PRIORITY_CHANGED = "issue_priority_changed"
+EVENT_ISSUE_CONFIRMED = "issue_confirmed"
+EVENT_ISSUE_DELETED = "issue_deleted"
+EVENT_ISSUE_LINKED = "issue_linked"
+EVENT_ISSUE_UNLINKED = "issue_unlinked"
+
+
+def _serialize_event_value(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value)
+
+
 def init_db():
     conn = _get_conn()
     conn.execute(
@@ -169,6 +211,51 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_issues_user ON issues(created_by_github_login)"
     )
 
+    # data de fechamento para as métricas de lead time/throughput
+    issue_columns = {row["name"] for row in conn.execute("PRAGMA table_info(issues)")}
+    if "closed_at" not in issue_columns:
+        conn.execute("ALTER TABLE issues ADD COLUMN closed_at TEXT")
+    if "completed_at" not in issue_columns:
+        conn.execute("ALTER TABLE issues ADD COLUMN completed_at TEXT")
+
+    # arquivamento suave de projetos (a UI promete recuperação em 30 dias)
+    project_columns = {row["name"] for row in conn.execute("PRAGMA table_info(projects)")}
+    if "archived" not in project_columns:
+        conn.execute("ALTER TABLE projects ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+    if "archived_at" not in project_columns:
+        conn.execute("ALTER TABLE projects ADD COLUMN archived_at TEXT")
+
+    # histórico real de eventos por issue: sustenta o burndown e o lead time
+    # e as métricas por membro sem inventar dados anteriores à instalação.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS issue_events (
+            id TEXT PRIMARY KEY,
+            issue_id TEXT NOT NULL,
+            project_id TEXT,
+            record_id TEXT,
+            sprint_id TEXT,
+            event_type TEXT NOT NULL,
+            field TEXT,
+            old_value TEXT,
+            new_value TEXT,
+            actor_github_login TEXT NOT NULL,
+            created_by_github_login TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            metadata TEXT
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_issue_events_issue ON issue_events(issue_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_issue_events_project ON issue_events(project_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_issue_events_user ON issue_events(created_by_github_login)"
+    )
+
     # sprints e seus itens (modelo enxuto de scrum para o TCC):
     # a sprint guarda nome, objetivo, período e status; cada tarefa guarda os
     # pontos, o responsável, a origem (reunião/manual) e os vínculos opcionais
@@ -243,6 +330,7 @@ def insert_record(
 
 def update_record_status(record_id: str, status: str, **kwargs):
     # atualiza o status e campos opcionais (transcript, summary, tasks etc).
+    # usa o vocabulário canônico para que extensão, API e dashboard coincidam.
     conn = _get_conn()
     allowed = {
         "transcript",
@@ -255,8 +343,9 @@ def update_record_status(record_id: str, status: str, **kwargs):
         "repo_full_name",
         "project_id",
     }
+    safe_status = normalize_record_status(status)
     sets = ["status = ?"]
-    values = [status]
+    values = [safe_status]
     for k, v in kwargs.items():
         if k in allowed:
             sets.append(f"{k} = ?")
@@ -320,6 +409,208 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
             except (json.JSONDecodeError, TypeError):
                 pass
     return d
+
+
+# ---------------------------------------------------------------------------
+# histórico de eventos de issues
+# ---------------------------------------------------------------------------
+
+def record_issue_event(
+    *,
+    issue_id: str,
+    event_type: str,
+    actor_github_login: str,
+    created_by_github_login: Optional[str] = None,
+    project_id: Optional[str] = None,
+    record_id: Optional[str] = None,
+    sprint_id: Optional[str] = None,
+    field: Optional[str] = None,
+    old_value: Any = None,
+    new_value: Any = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> None:
+    # guarda um evento atômico sobre uma issue. os eventos são a base do
+    # histórico real: não se inventam transições para dados anteriores à
+    # instalação desta versão (os registros existentes ficam como
+    # "histórico parcial").
+    conn = _get_conn()
+    now = datetime.utcnow().isoformat()
+    conn.execute(
+        """
+        INSERT INTO issue_events (
+            id, issue_id, project_id, record_id, sprint_id, event_type, field,
+            old_value, new_value, actor_github_login, created_by_github_login,
+            created_at, metadata
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(uuid.uuid4()),
+            issue_id,
+            project_id,
+            record_id,
+            sprint_id,
+            event_type,
+            field,
+            _serialize_event_value(old_value),
+            _serialize_event_value(new_value),
+            actor_github_login,
+            created_by_github_login or actor_github_login,
+            now,
+            _serialize_event_value(metadata),
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def _emit_issue_change_events(old: dict, new: dict, actor: str) -> None:
+    # compara o antes/depois de uma atualização e registra os eventos
+    # relevantes (estado, responsável, pontos, prioridade, título).
+    def changed(field: str) -> bool:
+        return (old.get(field) or None) != (new.get(field) or None)
+
+    project_id = new.get("project_id")
+    record_id = new.get("record_id")
+
+    if changed("state"):
+        record_issue_event(
+            issue_id=new["id"],
+            event_type=EVENT_ISSUE_STATE_CHANGED,
+            actor_github_login=actor,
+            created_by_github_login=actor,
+            project_id=project_id,
+            record_id=record_id,
+            field="state",
+            old_value=old.get("state"),
+            new_value=new.get("state"),
+        )
+    if changed("assignee"):
+        record_issue_event(
+            issue_id=new["id"],
+            event_type=EVENT_ISSUE_ASSIGNED,
+            actor_github_login=actor,
+            created_by_github_login=actor,
+            project_id=project_id,
+            record_id=record_id,
+            field="assignee",
+            old_value=old.get("assignee"),
+            new_value=new.get("assignee"),
+        )
+    if changed("points"):
+        record_issue_event(
+            issue_id=new["id"],
+            event_type=EVENT_ISSUE_POINTS_CHANGED,
+            actor_github_login=actor,
+            created_by_github_login=actor,
+            project_id=project_id,
+            record_id=record_id,
+            field="points",
+            old_value=old.get("points"),
+            new_value=new.get("points"),
+        )
+    if changed("priority"):
+        record_issue_event(
+            issue_id=new["id"],
+            event_type=EVENT_ISSUE_PRIORITY_CHANGED,
+            actor_github_login=actor,
+            created_by_github_login=actor,
+            project_id=project_id,
+            record_id=record_id,
+            field="priority",
+            old_value=old.get("priority"),
+            new_value=new.get("priority"),
+        )
+
+    for field in ("title", "body", "repo_full_name"):
+        if changed(field):
+            record_issue_event(
+                issue_id=new["id"],
+                event_type=EVENT_ISSUE_UPDATED,
+                actor_github_login=actor,
+                created_by_github_login=actor,
+                project_id=project_id,
+                record_id=record_id,
+                field=field,
+                old_value=old.get(field),
+                new_value=new.get(field),
+            )
+
+
+def list_issue_events(
+    github_login: str,
+    *,
+    issue_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+    sprint_id: Optional[str] = None,
+    event_type: Optional[str] = None,
+    member: Optional[str] = None,
+    limit: int = 500,
+    offset: int = 0,
+) -> tuple[list[dict], int]:
+    # lista eventos acessíveis ao usuário (delimitados por created_by_github_login
+    # para não expor dados de outros workspaces).
+    clauses = ["created_by_github_login = ?"]
+    values: list[Any] = [github_login]
+    if issue_id:
+        clauses.append("issue_id = ?")
+        values.append(issue_id)
+    if project_id:
+        clauses.append("project_id = ?")
+        values.append(project_id)
+    if sprint_id:
+        clauses.append("sprint_id = ?")
+        values.append(sprint_id)
+    if event_type:
+        clauses.append("event_type = ?")
+        values.append(event_type)
+    if member:
+        cleaned = str(member).strip().lstrip("@")
+        clauses.append("(actor_github_login = ? OR new_value = ? OR old_value = ?)")
+        values += [cleaned, cleaned, cleaned]
+
+    where = " AND ".join(clauses)
+    conn = _get_conn()
+    rows = conn.execute(
+        f"""
+        SELECT * FROM issue_events
+        WHERE {where}
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+        """,
+        (*values, limit, offset),
+    ).fetchall()
+    total_row = conn.execute(
+        f"SELECT COUNT(*) AS c FROM issue_events WHERE {where}", values
+    ).fetchone()
+    conn.close()
+    events = []
+    for row in rows:
+        event = dict(row)
+        if event.get("metadata"):
+            try:
+                event["metadata"] = json.loads(event["metadata"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        events.append(event)
+    return events, int(total_row["c"] if total_row is not None else 0)
+
+
+def count_issue_events(github_login: str, *, project_id: Optional[str] = None) -> int:
+    # usado para detectar "histórico parcial": se não houver eventos registrados,
+    # as métricas são derivadas do estado atual sem transições reais.
+    clauses = ["created_by_github_login = ?"]
+    values: list[Any] = [github_login]
+    if project_id:
+        clauses.append("project_id = ?")
+        values.append(project_id)
+    conn = _get_conn()
+    row = conn.execute(
+        f"SELECT COUNT(*) AS c FROM issue_events WHERE {' AND '.join(clauses)}",
+        values,
+    ).fetchone()
+    conn.close()
+    return int(row["c"] if row is not None else 0)
 
 
 # times e apelidos
@@ -437,6 +728,124 @@ def get_team_members(team_id: str) -> list[dict]:
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_team_member_logins(team_id: str) -> set[str]:
+    conn = _get_conn()
+    rows = conn.execute(
+        "SELECT github_login FROM team_members WHERE team_id = ?", (team_id,)
+    ).fetchall()
+    conn.close()
+    return {str(r["github_login"]) for r in rows}
+
+
+def get_project_member_logins(project_id: str) -> set[str]:
+    # logins de todas as pessoas das equipes vinculadas ao projeto
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT DISTINCT tm.github_login
+        FROM team_members tm
+        JOIN project_teams pt ON pt.team_id = tm.team_id
+        WHERE pt.project_id = ?
+        """,
+        (project_id,),
+    ).fetchall()
+    conn.close()
+    return {str(r["github_login"]) for r in rows}
+
+
+def validate_assignee_for_project(
+    project_id: Optional[str], assignee: Optional[str], github_login: str
+) -> bool:
+    # o responsável deve ser uma pessoa real da equipe do projeto
+    # (ou o próprio autor). evita-se o assignee de texto livre sem respaldo.
+    cleaned = str(assignee or "").strip().lstrip("@")
+    if not cleaned:
+        return True
+    if cleaned.lower() == str(github_login or "").lower():
+        return True
+    if not project_id:
+        return True
+    return cleaned.lower() in {
+        m.lower() for m in get_project_member_logins(project_id)
+    }
+
+
+def get_team_detail(team_id: str, github_login: str) -> Optional[dict]:
+    # detalhe de uma equipe: membros, projetos, repositórios e issues.
+    conn = _get_conn()
+    team = conn.execute(
+        "SELECT * FROM teams WHERE id = ? AND created_by_github_login = ?",
+        (team_id, github_login),
+    ).fetchone()
+    if team is None:
+        conn.close()
+        return None
+
+    detail = dict(team)
+    detail["members"] = [dict(r) for r in conn.execute(
+        "SELECT tm.github_login, tm.added_at FROM team_members tm "
+        "WHERE tm.team_id = ? ORDER BY tm.added_at ASC",
+        (team_id,),
+    ).fetchall()]
+    detail["member_count"] = len(detail["members"])
+
+    detail["projects"] = [dict(r) for r in conn.execute(
+        """
+        SELECT p.id, p.name, p.description, p.created_at, p.updated_at,
+               (SELECT COUNT(*) FROM project_repositories pr WHERE pr.project_id = p.id) AS repositories
+        FROM projects p
+        JOIN project_teams pt ON pt.project_id = p.id
+        WHERE pt.team_id = ? AND p.created_by_github_login = ? AND p.archived = 0
+        ORDER BY p.updated_at DESC
+        """,
+        (team_id, github_login),
+    ).fetchall()]
+
+    detail["repositories"] = [r["repo_full_name"] for r in conn.execute(
+        """
+        SELECT DISTINCT pr.repo_full_name
+        FROM project_repositories pr
+        WHERE pr.project_id IN (
+            SELECT project_id FROM project_teams WHERE team_id = ?
+        )
+        ORDER BY pr.repo_full_name
+        """,
+        (team_id,),
+    ).fetchall()]
+
+    member_logins = [m["github_login"] for m in detail["members"]]
+    issues: list[dict] = []
+    if member_logins:
+        placeholders = ", ".join("?" for _ in member_logins)
+        issues = [dict(r) for r in conn.execute(
+            f"""
+            SELECT * FROM issues
+            WHERE created_by_github_login = ? AND assignee IN ({placeholders})
+            ORDER BY updated_at DESC LIMIT 500
+            """,
+            (github_login, *member_logins),
+        ).fetchall()]
+    detail["issues"] = issues
+    conn.close()
+    return detail
+
+
+def list_sprint_linked_issue_ids(sprint_id: str, github_login: str) -> set[str]:
+    # issues vinculadas a uma sprint por meio das tarefas do backlog da sprint
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT st.issue_id FROM sprint_tasks st
+        JOIN sprints s ON s.id = st.sprint_id
+        WHERE st.sprint_id = ? AND st.issue_id IS NOT NULL
+              AND s.created_by_github_login = ?
+        """,
+        (sprint_id, github_login),
+    ).fetchall()
+    conn.close()
+    return {str(r["issue_id"]) for r in rows}
 
 
 def get_user_aliases() -> Dict[str, str]:
@@ -569,14 +978,16 @@ def create_issue_row(
     
     conn = _get_conn()
     now = datetime.utcnow().isoformat()
+    closed_at = now if state == "closed" else None
     conn.execute(
         """
         INSERT INTO issues (
             id, github_issue_id, number, title, body, state, repo_full_name,
             source, points, priority, priority_source, assignee, html_url,
-            record_id, project_id, created_by_github_login, created_at, updated_at
+            record_id, project_id, created_by_github_login, created_at, updated_at,
+            closed_at, completed_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             issue_id,
@@ -597,12 +1008,31 @@ def create_issue_row(
             github_login,
             now,
             now,
+            closed_at,
+            closed_at,
         ),
     )
     conn.commit()
     row = conn.execute("SELECT * FROM issues WHERE id = ?", (issue_id,)).fetchone()
     conn.close()
-    return dict(row) if row is not None else {}
+    if row is not None:
+        created = dict(row)
+        record_issue_event(
+            issue_id=issue_id,
+            event_type=EVENT_ISSUE_CREATED,
+            actor_github_login=github_login,
+            created_by_github_login=github_login,
+            project_id=project_id,
+            record_id=record_id,
+            metadata={
+                "title": created.get("title"),
+                "source": created.get("source"),
+                "state": created.get("state"),
+                "github_issue_id": created.get("github_issue_id"),
+            },
+        )
+        return created
+    return {}
 
 
 def upsert_external_issue(
@@ -637,26 +1067,46 @@ def upsert_external_issue(
     ).fetchone()
 
     if row is not None:
+        before = conn.execute(
+            "SELECT * FROM issues WHERE id = ?", (row["id"],)
+        ).fetchone()
         conn.execute(
             """
             UPDATE issues
-            SET title = ?, body = ?, state = ?, html_url = ?, updated_at = ?
+            SET title = ?, body = ?, state = ?, html_url = ?,
+                updated_at = ?, closed_at = ?, completed_at = ?
             WHERE id = ?
             """,
-            (title, body, state, html_url, now, row["id"]),
+            (
+                title,
+                body,
+                state,
+                html_url,
+                now,
+                now if state == "closed" else None,
+                now if state == "closed" else None,
+                row["id"],
+            ),
         )
         conn.commit()
+        after = conn.execute(
+            "SELECT * FROM issues WHERE id = ?", (row["id"],)
+        ).fetchone()
         conn.close()
+        if before is not None and after is not None:
+            # emite as transições reais (por exemplo, quando foi fechada no GitHub)
+            _emit_issue_change_events(dict(before), dict(after), github_login)
         return False
 
+    closed_at = now if state == "closed" else None
     conn.execute(
         """
         INSERT INTO issues (
             id, github_issue_id, number, title, body, state, repo_full_name,
             source, points, priority, priority_source, assignee, html_url,
-            created_by_github_login, created_at, updated_at
+            created_by_github_login, created_at, updated_at, closed_at, completed_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'external', 0, 'medium', 'system', ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'external', 0, 'medium', 'system', ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             str(uuid.uuid4()),
@@ -671,10 +1121,24 @@ def upsert_external_issue(
             github_login,
             created_at,
             now,
+            closed_at,
+            closed_at,
         ),
     )
     conn.commit()
+    row_id = conn.execute(
+        "SELECT id FROM issues WHERE github_issue_id = ? AND created_by_github_login = ?",
+        (gh_id, github_login),
+    ).fetchone()
     conn.close()
+    if row_id is not None:
+        record_issue_event(
+            issue_id=row_id["id"],
+            event_type=EVENT_ISSUE_CREATED,
+            actor_github_login=github_login,
+            created_by_github_login=github_login,
+            metadata={"title": title, "source": "external", "state": state, "github_issue_id": gh_id},
+        )
     return True
 
 
@@ -767,6 +1231,7 @@ def update_issue_fields(
         "github_issue_id",
         "number",
         "html_url",
+        "project_id",
     }
     sets = []
     values: list[Any] = []
@@ -778,34 +1243,87 @@ def update_issue_fields(
             value = _clamp_priority(value)
         elif key == "points":
             value = _clamp_points(value)
+        elif key == "state":
+            value = "closed" if str(value or "open").strip().lower() == "closed" else "open"
         sets.append(f"{key} = ?")
         values.append(value)
 
     if not sets:
         return get_user_issue(issue_id, github_login)
 
-    values.append(datetime.utcnow().isoformat())
-    values.extend([issue_id, github_login])
     conn = _get_conn()
+    old_row = conn.execute(
+        "SELECT * FROM issues WHERE id = ? AND created_by_github_login = ?",
+        (issue_id, github_login),
+    ).fetchone()
+    if old_row is None:
+        conn.close()
+        return None
+    old = dict(old_row)
+
+    now = datetime.utcnow().isoformat()
+    # transições de estado atualizam closed_at/completed_at (lead time real)
+    if "state" in fields:
+        if fields["state"] == "closed":
+            sets.append("closed_at = ?")
+            values.append(now)
+            sets.append("completed_at = ?")
+            values.append(now)
+        else:
+            sets.append("closed_at = ?")
+            values.append(None)
+            sets.append("completed_at = ?")
+            values.append(None)
+
+    values.append(now)
+    values.extend([issue_id, github_login])
     conn.execute(
         f"UPDATE issues SET {', '.join(sets)}, updated_at = ? "
         "WHERE id = ? AND created_by_github_login = ?",
         values,
     )
     conn.commit()
+    new_row = conn.execute(
+        "SELECT * FROM issues WHERE id = ? AND created_by_github_login = ?",
+        (issue_id, github_login),
+    ).fetchone()
     conn.close()
-    return get_user_issue(issue_id, github_login)
+    if new_row is None:
+        return None
+    updated = dict(new_row)
+    _emit_issue_change_events(old, updated, github_login)
+    return updated
 
 
 def delete_user_issue(issue_id: str, github_login: str) -> bool:
     conn = _get_conn()
+    row = conn.execute(
+        "SELECT * FROM issues WHERE id = ? AND created_by_github_login = ?",
+        (issue_id, github_login),
+    ).fetchone()
     cursor = conn.execute(
         "DELETE FROM issues WHERE id = ? AND created_by_github_login = ?",
         (issue_id, github_login),
     )
     conn.commit()
     conn.close()
-    return cursor.rowcount > 0
+    deleted = cursor.rowcount > 0
+    if deleted and row is not None:
+        issue = dict(row)
+        record_issue_event(
+            issue_id=issue_id,
+            event_type=EVENT_ISSUE_DELETED,
+            actor_github_login=github_login,
+            created_by_github_login=github_login,
+            project_id=issue.get("project_id"),
+            record_id=issue.get("record_id"),
+            metadata={
+                "title": issue.get("title"),
+                "state": issue.get("state"),
+                "source": issue.get("source"),
+            },
+        )
+    return deleted
 
 
 def create_draft_issues_from_tasks(
@@ -863,6 +1381,21 @@ def create_draft_issues_from_tasks(
         if row is not None:
             rows.append(dict(row))
     conn.close()
+
+    for created in rows:
+        record_issue_event(
+            issue_id=created["id"],
+            event_type=EVENT_ISSUE_CREATED,
+            actor_github_login=github_login,
+            created_by_github_login=github_login,
+            project_id=project_id,
+            record_id=record_id,
+            metadata={
+                "title": created.get("title"),
+                "source": "draft",
+                "state": created.get("state"),
+            },
+        )
     return rows
 
 
@@ -918,6 +1451,19 @@ def mark_drafts_confirmed(
             ),
         )
     conn.commit()
+    if pending and len(pending) == len(created_meta):
+        for row, meta in zip(pending, created_meta):
+            record_issue_event(
+                issue_id=row["id"],
+                event_type=EVENT_ISSUE_CONFIRMED,
+                actor_github_login=github_login,
+                created_by_github_login=github_login,
+                metadata={
+                    "github_issue_id": meta.get("id"),
+                    "number": meta.get("number"),
+                    "html_url": meta.get("html_url"),
+                },
+            )
     conn.close()
     return len(pending)
 
@@ -967,12 +1513,20 @@ def create_project(project_id: str, github_login: str, name: str, description: s
     return dict(row) if row else {}
 
 
-def get_user_project(project_id: str, github_login: str) -> Optional[dict]:
+def get_user_project(
+    project_id: str, github_login: str, include_archived: bool = False
+) -> Optional[dict]:
     conn = _get_conn()
-    row = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND created_by_github_login = ?",
-        (project_id, github_login),
-    ).fetchone()
+    if include_archived:
+        row = conn.execute(
+            "SELECT * FROM projects WHERE id = ? AND created_by_github_login = ?",
+            (project_id, github_login),
+        ).fetchone()
+    else:
+        row = conn.execute(
+            "SELECT * FROM projects WHERE id = ? AND created_by_github_login = ? AND archived = 0",
+            (project_id, github_login),
+        ).fetchone()
     conn.close()
     return dict(row) if row else None
 
@@ -980,7 +1534,7 @@ def get_user_project(project_id: str, github_login: str) -> Optional[dict]:
 def list_user_projects(github_login: str) -> list[dict]:
     conn = _get_conn()
     rows = conn.execute(
-        "SELECT * FROM projects WHERE created_by_github_login = ? ORDER BY updated_at DESC",
+        "SELECT * FROM projects WHERE created_by_github_login = ? AND archived = 0 ORDER BY updated_at DESC",
         (github_login,),
     ).fetchall()
     result = []
@@ -1035,6 +1589,33 @@ def delete_user_project(project_id: str, github_login: str) -> bool:
     cursor = conn.execute(
         "DELETE FROM projects WHERE id = ? AND created_by_github_login = ?",
         (project_id, github_login),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0
+
+
+def archive_user_project(project_id: str, github_login: str) -> bool:
+    # arquiva o projeto: os vínculos e métricas são mantidos para permitir
+    # sua restauração (a UI promete recuperação), sem apagar dados diretamente.
+    conn = _get_conn()
+    now = datetime.utcnow().isoformat()
+    cursor = conn.execute(
+        "UPDATE projects SET archived = 1, archived_at = ?, updated_at = ? "
+        "WHERE id = ? AND created_by_github_login = ?",
+        (now, now, project_id, github_login),
+    )
+    conn.commit()
+    conn.close()
+    return cursor.rowcount > 0
+
+
+def restore_user_project(project_id: str, github_login: str) -> bool:
+    conn = _get_conn()
+    cursor = conn.execute(
+        "UPDATE projects SET archived = 0, archived_at = NULL, updated_at = ? "
+        "WHERE id = ? AND created_by_github_login = ?",
+        (datetime.utcnow().isoformat(), project_id, github_login),
     )
     conn.commit()
     conn.close()
@@ -1102,6 +1683,13 @@ def attach_record_to_project(record_id: str, project_id: Optional[str], github_l
     if project_id and get_user_project(project_id, github_login) is None:
         conn.close()
         return None
+    affected_issues = [
+        dict(r)
+        for r in conn.execute(
+            "SELECT * FROM issues WHERE record_id = ? AND created_by_github_login = ?",
+            (record_id, github_login),
+        ).fetchall()
+    ]
     conn.execute(
         "UPDATE audio_records SET project_id = ? WHERE id = ? AND user_github_login = ?",
         (project_id, record_id, github_login),
@@ -1113,6 +1701,21 @@ def attach_record_to_project(record_id: str, project_id: Optional[str], github_l
     conn.commit()
     row = conn.execute("SELECT * FROM audio_records WHERE id = ?", (record_id,)).fetchone()
     conn.close()
+
+    for issue in affected_issues:
+        if (issue.get("project_id") or None) == (project_id or None):
+            continue
+        record_issue_event(
+            issue_id=issue["id"],
+            event_type=EVENT_ISSUE_LINKED if project_id else EVENT_ISSUE_UNLINKED,
+            actor_github_login=github_login,
+            created_by_github_login=github_login,
+            project_id=project_id,
+            record_id=record_id,
+            old_value=issue.get("project_id"),
+            new_value=project_id,
+        )
+
     return _row_to_dict(row) if row else None
 
 
@@ -1121,6 +1724,10 @@ def attach_issue_to_project(issue_id: str, project_id: Optional[str], github_log
     if project_id and get_user_project(project_id, github_login) is None:
         conn.close()
         return None
+    old = conn.execute(
+        "SELECT * FROM issues WHERE id = ? AND created_by_github_login = ?",
+        (issue_id, github_login),
+    ).fetchone()
     conn.execute(
         "UPDATE issues SET project_id = ?, updated_at = ? WHERE id = ? AND created_by_github_login = ?",
         (project_id, datetime.utcnow().isoformat(), issue_id, github_login),
@@ -1128,6 +1735,17 @@ def attach_issue_to_project(issue_id: str, project_id: Optional[str], github_log
     conn.commit()
     row = conn.execute("SELECT * FROM issues WHERE id = ? AND created_by_github_login = ?", (issue_id, github_login)).fetchone()
     conn.close()
+    if row is not None and (old is None or (old["project_id"] or None) != (row["project_id"] or None)):
+        record_issue_event(
+            issue_id=issue_id,
+            event_type=EVENT_ISSUE_LINKED if row["project_id"] else EVENT_ISSUE_UNLINKED,
+            actor_github_login=github_login,
+            created_by_github_login=github_login,
+            project_id=row["project_id"],
+            record_id=row["record_id"],
+            old_value=(old["project_id"] if old else None),
+            new_value=row["project_id"],
+        )
     return dict(row) if row else None
 
 

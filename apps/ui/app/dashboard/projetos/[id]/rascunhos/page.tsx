@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { IssuesTable } from '@/components/dashboard/table';
-import { useProject } from '@/components/dashboard/project/context';
+import { useProject } from '@/components/dashboard/context/project';
 import { routeHref } from '@/lib/demo';
 
 export default function RascunhosTabPage() {

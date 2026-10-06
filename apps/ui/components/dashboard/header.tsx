@@ -30,7 +30,7 @@ function getSystemTheme(): 'light' | 'dark' {
 
 export function DashboardHeader({ onOpenSidebar, onToggleSidebar, sidebarCollapsed }: { onOpenSidebar: () => void; onToggleSidebar: () => void; sidebarCollapsed: boolean }) {
 	const router = useRouter();
-	const { user, signOut } = useAuth();
+	const { user, isDemo, signOut } = useAuth();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [theme, setTheme] = useState<ThemeOption>(() => {
 		if (typeof window === 'undefined') return 'auto';
@@ -74,8 +74,8 @@ export function DashboardHeader({ onOpenSidebar, onToggleSidebar, sidebarCollaps
 
 	function handleLogout() {
 		setMenuOpen(false);
+		router.replace(isDemo ? '/' : '/login');
 		signOut();
-		router.replace('/login');
 	}
 
 	function handleSettings() {
@@ -180,7 +180,7 @@ export function DashboardHeader({ onOpenSidebar, onToggleSidebar, sidebarCollaps
 						</div>
 
 						<div className="border-t border-stone-200 p-3">
-							<button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50">
+							<button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer">
 								<LogOut className="h-4 w-4" />
 								Sair
 							</button>

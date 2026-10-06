@@ -9,8 +9,9 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
-import { isDemoRoute } from "@/lib/demo";
+import { isDemoPathname, isDemoRoute } from "@/lib/demo";
 import { fetchMe } from "@/lib/api";
 import type { MeResponse } from "@/lib/api";
 import { DEMO_TOKEN } from "@/lib/demo-data";
@@ -25,6 +26,8 @@ type AuthContextValue = {
   user: MeResponse | null;
   /** true enquanto restauramos/validamos a sessão no navegador */
   loading: boolean;
+  /** true quando a navegação atual pertence à demonstração pública */
+  isDemo: boolean;
   /** salva o token recebido no callback do GitHub */
   signIn: (token: string) => void;
   /** limpa a sessão local (logout). */
@@ -39,8 +42,12 @@ function readStoredToken(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isDemo = isDemoPathname(pathname);
   // lê o token salvo de forma preguiçosa
-  const [token, setToken] = useState<string | null>(readStoredToken);
+  const [token, setToken] = useState<string | null>(() =>
+    isDemoRoute() ? DEMO_TOKEN : readStoredToken(),
+  );
   const [user, setUser] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // modo demo: quando navegamos por /demo/* entramos sempre com o token
       // de demo, mesmo se houver outro token guardado, para isolar a demo
       // da API real.
-      if (isDemoRoute() && currentToken !== DEMO_TOKEN) {
+      if (isDemo && currentToken !== DEMO_TOKEN) {
         setToken(DEMO_TOKEN);
         return;
       }
@@ -83,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [isDemo, token]);
 
   const signIn = useCallback((newToken: string) => {
     window.localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
@@ -97,8 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ token, user, loading, signIn, signOut }),
-    [token, user, loading, signIn, signOut],
+    () => ({ token, user, loading, isDemo, signIn, signOut }),
+    [token, user, loading, isDemo, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

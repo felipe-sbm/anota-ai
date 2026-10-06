@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth';
-import { useProject } from '@/components/dashboard/project/context';
+import { useProject } from '@/components/dashboard/context/project';
 import { fetchRepositories, fetchTeams, updateProject, type Repository, type TeamResponse } from '@/lib/api';
 
 export default function ConfiguracoesTabPage() {

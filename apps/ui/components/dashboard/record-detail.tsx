@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { CalendarDays, ExternalLink, FileText, FolderKanban, GitBranch, MessageSquareText, Search, UsersRound } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth';
-import { attachRecordToProject, fetchAudioRecords, fetchProjects, type AudioRecord, type Project } from '@/lib/api';
+import { attachRecordToProject, fetchAudioRecord, fetchProjects, type AudioRecord, type Project } from '@/lib/api';
 
 function formatDate(value?: string | null) {
 	if (!value) return '—';
@@ -86,8 +86,7 @@ export function RecordDetail({ recordId: recordIdProp }: RecordDetailProps) {
 
 		async function loadRecord() {
 			try {
-				const [data, projectData] = await Promise.all([fetchAudioRecords(authToken, 200), fetchProjects(authToken)]);
-				const found = data.find((item) => (item.id ?? '') === recordId) ?? null;
+				const [found, projectData] = await Promise.all([fetchAudioRecord(authToken, recordId), fetchProjects(authToken)]);
 				setRecord(found);
 				setProjects(projectData);
 			} catch (error) {

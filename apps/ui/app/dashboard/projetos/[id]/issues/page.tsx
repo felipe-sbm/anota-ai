@@ -1,11 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 
 import { IssuesTable } from '@/components/dashboard/table';
-import { useProject } from '@/components/dashboard/project/context';
-import { routeHref } from '@/lib/demo';
+import { useProject } from '@/components/dashboard/context/project';
 
 export default function IssuesTabPage() {
 	const { project, confirmIssue, removeIssue, updateIssuePoints, updateIssuePriority } = useProject();

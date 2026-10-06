@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, Depends, Header, UploadFile, File, HTTPException
 
 from ..core.security import verify_jwt
-from ..models.database import insert_record, get_record, list_records, count_records, update_record_status
+from ..models.database import RECORDING_STATUSES, RECORDING_STATUS_LABELS, insert_record, get_record, list_records, count_records, update_record_status
 from ..models.schemas import ReviewRequest
 
 
@@ -69,6 +69,16 @@ async def upload_audio(
         "file_id": file_id,
         "filename": filename,
         "record": record,
+    }
+
+
+@app_router.get("/statuses", status_code=200)
+async def audio_statuses(auth=Depends(require_auth)):
+    # vocabulário canônico de estados de uma gravação compartilhado pela
+    # extensão, pela API e pelo dashboard.
+    return {
+        "statuses": list(RECORDING_STATUSES),
+        "labels": RECORDING_STATUS_LABELS,
     }
 
 

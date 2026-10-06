@@ -24,6 +24,7 @@ type ProjectContextValue = {
 	removeIssue: (issue: Issue) => Promise<void>;
 	updateIssuePoints: (issue: Issue, points: number) => Promise<void>;
 	updateIssuePriority: (issue: Issue, priority: IssuePriority) => Promise<void>;
+	updateIssueLocal: (issue: Issue, changes: Partial<Issue>) => void;
 };
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
@@ -66,35 +67,55 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 		setProject(updated);
 	}
 
+	/** atualiza uma issue no estado local sem recarregar o projeto inteiro. */
+	function updateIssueLocal(issue: Issue, changes: Partial<Issue>) {
+		setProject((current) => {
+			if (!current) return current;
+			return {
+				...current,
+				issues: (current.issues ?? []).map((item) =>
+					item.id === issue.id ? { ...item, ...changes } : item,
+				),
+			};
+		});
+	}
+
 	async function confirmIssue(issue: Issue) {
 		if (!token) return;
 		if (!window.confirm(`Enviar "${issue.title}" ao GitHub?`)) return;
 		const result = await confirmIssues(token, [issue.id]);
-		if (!result.results?.[0]?.ok) throw new Error(result.results?.[0]?.error ?? 'Não foi possível confirmar a issue.');
-		await reloadProject();
+		const outcome = result.results?.[0];
+		if (!outcome?.ok) throw new Error(outcome?.error ?? 'Não foi possível confirmar a issue.');
+		if (outcome.issue) {
+			updateIssueLocal(issue, outcome.issue);
+		} else {
+			await reloadProject();
+		}
 	}
 
 	async function removeIssue(issue: Issue) {
 		if (!token) return;
 		if (!window.confirm(`Descartar o rascunho "${issue.title}"?`)) return;
 		await deleteIssue(token, issue.id);
-		await reloadProject();
+		setProject((current) => {
+			if (!current) return current;
+			return {
+				...current,
+				issues: (current.issues ?? []).filter((item) => item.id !== issue.id),
+			};
+		});
 	}
 
 	async function updateIssuePoints(issue: Issue, points: number) {
-		if (!token) return;
-		if (points !== issue.points) {
-			await updateIssue(token, issue.id, { points });
-			await reloadProject();
-		}
+		if (!token || points === issue.points) return;
+		const result = await updateIssue(token, issue.id, { points });
+		updateIssueLocal(issue, result.issue);
 	}
 
 	async function updateIssuePriority(issue: Issue, priority: IssuePriority) {
-		if (!token) return;
-		if (priority !== issue.priority) {
-			await updateIssue(token, issue.id, { priority });
-			await reloadProject();
-		}
+		if (!token || priority === issue.priority) return;
+		const result = await updateIssue(token, issue.id, { priority });
+		updateIssueLocal(issue, result.issue);
 	}
 
 	return (
@@ -109,6 +130,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 				removeIssue,
 				updateIssuePoints,
 				updateIssuePriority,
+				updateIssueLocal,
 			}}
 		>
 			{children}

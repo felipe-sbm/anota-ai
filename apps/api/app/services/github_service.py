@@ -265,6 +265,31 @@ class GithubService:
             "projects": projects,
         }
 
+    def search_users(self, query: str, limit: int = 8) -> List[Dict[str, Any]]:
+        # busca usuários do GitHub por login ou nome (para agregar membros).
+        per_page = max(1, min(int(limit or 8), 20))
+        try:
+            matches = self._gh.search_users(query, per_page=per_page)
+        except AttributeError:
+            matches = self._gh.get_users(query, per_page=per_page)
+        results: List[Dict[str, Any]] = []
+        seen: set[str] = set()
+        for user in matches:
+            login = getattr(user, "login", None)
+            if not login or login in seen:
+                continue
+            seen.add(login)
+            results.append(
+                {
+                    "github_login": login,
+                    "name": getattr(user, "name", None) or login,
+                    "avatar_url": getattr(user, "avatar_url", None),
+                }
+            )
+            if len(results) >= limit:
+                break
+        return results
+
     def _add_issue_to_project(
         self,
         repo,

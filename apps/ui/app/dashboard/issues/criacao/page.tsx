@@ -19,7 +19,7 @@ import { PRIORITY_LABELS, PRIORITY_DOT } from '@/components/dashboard/table';
 
 export default function CreateIssuesPage() {
 	const router = useRouter();
-	const { token, loading } = useAuth();
+	const { token, loading, isDemo } = useAuth();
 	const [repositories, setRepositories] = useState<Repository[]>([]);
 	const [repoFullName, setRepoFullName] = useState('');
 	const [meta, setMeta] = useState<RepoMeta | null>(null);
@@ -35,7 +35,7 @@ export default function CreateIssuesPage() {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!loading && !token) {
+		if (!loading && !token && !isDemo) {
 			router.replace('/login');
 			return;
 		}
@@ -48,7 +48,7 @@ export default function CreateIssuesPage() {
 				if (selectedRepo) setRepoFullName(selectedRepo.full_name);
 			})
 			.catch(() => setError('Não foi possível carregar seus repositórios.'));
-	}, [loading, router, token]);
+	}, [isDemo, loading, router, token]);
 
 	useEffect(() => {
 		if (!token || !repoFullName) return;

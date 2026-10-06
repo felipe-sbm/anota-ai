@@ -22,12 +22,12 @@ function formatDate(value?: string | null) {
 
 export default function RecordingsPage() {
 	const router = useRouter();
-	const { token, loading } = useAuth();
+	const { token, loading, isDemo } = useAuth();
 	const [records, setRecords] = useState<AudioRecord[]>([]);
 	const [loadingRecords, setLoadingRecords] = useState(true);
 
 	useEffect(() => {
-		if (!loading && !token) {
+		if (!loading && !token && !isDemo) {
 			router.replace('/login');
 			return;
 		}
@@ -48,7 +48,7 @@ export default function RecordingsPage() {
 		}
 
 		loadRecords();
-	}, [loading, router, token]);
+	}, [isDemo, loading, router, token]);
 
 	if (loading || !token) {
 		return (

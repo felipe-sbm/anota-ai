@@ -6,7 +6,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { ArrowLeft, AudioLines, BarChart3, CircleDot, Cog, FileText, LayoutDashboard, UsersRound } from 'lucide-react';
 
 import { routeHref } from '@/lib/demo';
-import { ProjectProvider, useProject } from '@/components/dashboard/project/context';
+import { ProjectProvider, useProject } from '@/components/dashboard/context/project';
 
 type ProjectTab = {
 	href: string;

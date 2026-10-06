@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, FileAudio } from 'lucide-react';
 
-import { useProject } from '@/components/dashboard/project/context';
+import { useProject } from '@/components/dashboard/context/project';
 import { routeHref } from '@/lib/demo';
 
 function EmptyState({ children }: { children: React.ReactNode }) {

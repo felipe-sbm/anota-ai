@@ -1,4 +1,4 @@
-import type { AudioRecord, BurndownPoint, Issue, Project, Repository, SprintDetail, SprintSummary, TeamMember, TeamResponse } from '@/lib/api';
+import type { AudioRecord, BurndownPoint, Issue, Project, ProjectPerformance, Repository, SprintDetail, SprintSummary, TeamDetail, TeamMember, TeamResponse } from '@/lib/api';
 
 export const DEMO_TOKEN = 'anota-ai-demo-token';
 
@@ -10,9 +10,9 @@ const now = '2026-09-30T10:00:00.000Z';
 
 const demoTeams: TeamResponse[] = [
 	{ id: 'team-product', name: 'Produto & Design', created_at: '2026-08-05T10:00:00.000Z', member_count: 3 },
-	{ id: 'team-platform', name: 'Plataforma', created_at: '2026-07-18T10:00:00.000Z', member_count: 6 },
-	{ id: 'team-growth', name: 'Growth & Dados', created_at: '2026-08-19T10:00:00.000Z', member_count: 3 },
-	{ id: 'team-mobile', name: 'Mobile', created_at: '2026-09-02T10:00:00.000Z', member_count: 2 },
+	{ id: 'team-platform', name: 'Desenvolvimento WEB', created_at: '2026-07-18T10:00:00.000Z', member_count: 6 },
+	{ id: 'team-growth', name: 'Inteligência Artifical', created_at: '2026-08-19T10:00:00.000Z', member_count: 3 },
+	{ id: 'team-mobile', name: 'Desenvolvimento Mobile', created_at: '2026-09-02T10:00:00.000Z', member_count: 2 },
 ];
 
 const demoTeamMembers: Record<string, TeamMember[]> = {
@@ -681,26 +681,26 @@ const demoProjects: Project[] = [
 		repositories: ['anota-ai/web', 'anota-ai/api', 'anota-ai/extension', 'anota-ai/design-system', 'anota-ai/docs'],
 		team_ids: ['team-product', 'team-platform', 'team-growth'],
 		record_count: 3,
-		issue_count: 6,
+		issue_count: 7,
 		records: demoRecords.filter((record) => record.project_id === 'project-launch'),
 		issues: demoIssues.filter((issue) => issue.project_id === 'project-launch'),
 		team_members: [
-			{ name: 'Bruno Ramon', user_name: 'MatsuCode', team_github_login: 'MatsuCode', team_name: 'Produto & Design', team_role: 'Desenvolvedor full-stack', assigned_issues: 1 },
+			{ name: 'Bruno Ramon', user_name: 'MatsuCode', team_github_login: 'MatsuCode', team_name: 'Produto & Design', team_role: 'Desenvolvedor full-stack', assigned_issues: 4 },
 			{ name: 'Arthur Gabriel Araújo', user_name: 'quiradon', team_github_login: 'quiradon', team_name: 'Produto & Design', team_role: 'Produto & Design', assigned_issues: 1 },
 			{ name: 'Gabriel Henrique', user_name: 'Gabriel-GH1', team_github_login: 'Gabriel-GH1', team_name: 'Produto & Design', team_role: 'Analista', assigned_issues: 1 },
-			{ name: 'Fernando Castro Gadelha', user_name: 'fernandocg1', team_github_login: 'fernandocg1', team_name: 'Plataforma', team_role: 'Pesquisador de Hardware', assigned_issues: 1 },
-			{ name: 'Eric Inácio', user_name: 'EricInacio01', team_github_login: 'EricInacio01', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
-			{ name: 'João Arthur', user_name: 'jagaldino', team_github_login: 'jagaldino', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
-			{ name: 'James Peter', user_name: 'Jmspter', team_github_login: 'Jmspter', team_name: 'Plataforma', team_role: 'Desenvolvedor Ruby', assigned_issues: 1 },
-			{ name: 'André "ADG" Paiva', user_name: 'euandrelucas', team_github_login: 'euandrelucas', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
-			{ name: 'Tempest', user_name: 'GaroteDePrograma', team_github_login: 'GaroteDePrograma', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend e Técnico em Cloud', assigned_issues: 1 },
-			{ name: 'Felipe Samuel', user_name: 'felipe-sbm', team_github_login: 'felipe-sbm', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
-			{ name: 'Felipe', user_name: 'felipepotigol', team_github_login: 'felipepotigol', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
-			{ name: 'Thiago Silva', user_name: 'thi-silva', team_github_login: 'thi-silva', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
+			{ name: 'Fernando Castro Gadelha', user_name: 'fernandocg1', team_github_login: 'fernandocg1', team_name: 'Desenvolvimento WEB', team_role: 'Pesquisador de Hardware', assigned_issues: 1 },
+			{ name: 'Eric Inácio', user_name: 'EricInacio01', team_github_login: 'EricInacio01', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
+			{ name: 'João Arthur', user_name: 'jagaldino', team_github_login: 'jagaldino', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
+			{ name: 'James Peter', user_name: 'Jmspter', team_github_login: 'Jmspter', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Ruby', assigned_issues: 1 },
+			{ name: 'André "ADG" Paiva', user_name: 'euandrelucas', team_github_login: 'euandrelucas', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
+			{ name: 'Tempest', user_name: 'GaroteDePrograma', team_github_login: 'GaroteDePrograma', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend e Técnico em Cloud', assigned_issues: 1 },
+			{ name: 'Felipe Samuel', user_name: 'felipe-sbm', team_github_login: 'felipe-sbm', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
+			{ name: 'Felipe', user_name: 'felipepotigol', team_github_login: 'felipepotigol', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
+			{ name: 'Thiago Silva', user_name: 'thi-silva', team_github_login: 'thi-silva', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
 		],
-		metrics: { issues: 6, drafts: 3, open_issues: 1, closed_issues: 2, recordings: 3 },
+		metrics: { issues: 15, drafts: 3, open_issues: 1, closed_issues: 2, recordings: 3 },
 		diagram: [
-			{ label: 'Issues abertas', value: 1},
+			{ label: 'Issues abertas', value: 3},
 			{ label: 'Rascunhos', value: 3},
 			{ label: 'Issues fechadas', value: 2},
 		],
@@ -720,9 +720,9 @@ const demoProjects: Project[] = [
 			{ name: 'Gabriel Henrique', user_name: 'Gabriel-GH1', team_github_login: 'Gabriel-GH1', team_name: 'Produto & Design', team_role: 'Analista e Orientador de Projeto', assigned_issues: 0 },
 			{ name: 'Arthur Gabriel Araújo', user_name: 'quiradon', team_github_login: 'quiradon', team_name: 'Produto & Design', team_role: 'QA e PO', assigned_issues: 1 },
 			{ name: 'Bruno Ramon', user_name: 'MatsuCode', team_github_login: 'MatsuCode', team_name: 'Produto & Design', team_role: 'Desenvolvedor Full-Stack', assigned_issues: 3 },
-			{ name: 'Felipe', user_name: 'felipepotigol', team_github_login: 'felipepotigol', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 0 },
-			{ name: 'Thiago Silva', user_name: 'thi-silva', team_github_login: 'thi-silva', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 2 },
-			{ name: 'Felipe Samuel', user_name: 'felipe-sbm', team_github_login: 'felipe-sbm', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 5 },
+			{ name: 'Felipe', user_name: 'felipepotigol', team_github_login: 'felipepotigol', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 0 },
+			{ name: 'Thiago Silva', user_name: 'thi-silva', team_github_login: 'thi-silva', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 2 },
+			{ name: 'Felipe Samuel', user_name: 'felipe-sbm', team_github_login: 'felipe-sbm', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 5 },
 		],
 		metrics: { issues: 4, drafts: 1, open_issues: 2, closed_issues: 1, recordings: 2 },
 		diagram: [
@@ -743,11 +743,11 @@ const demoProjects: Project[] = [
 		records: demoRecords.filter((record) => record.project_id === 'project-mobile'),
 		issues: demoIssues.filter((issue) => issue.project_id === 'project-mobile'),
 		team_members: [
-			{ name: 'Thierry Henry Vidal Mandogou', user_name: 'thyevidal', team_github_login: 'thyevidal', team_name: 'Mobile', team_role: 'Desenvolvedor Mobile', assigned_issues: 1 },
-			{ name: 'Oscar Kemuel', user_name: 'oscarkemuel', team_github_login: 'oscarkemuel', team_name: 'Mobile', team_role: 'Desenvolvedor Mobile', assigned_issues: 1 },
-			{ name: 'Felipe Samuel', user_name: 'felipe-sbm', team_github_login: 'felipe-sbm', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
-			{ name: 'Felipe', user_name: 'felipepotigol', team_github_login: 'felipepotigol', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
-			{ name: 'Thiago Silva', user_name: 'thi-silva', team_github_login: 'thi-silva', team_name: 'Growth & Dados', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
+			{ name: 'Thierry Henry Vidal Mandogou', user_name: 'thyevidal', team_github_login: 'thyevidal', team_name: 'Desenvolvimento Mobile', team_role: 'Desenvolvedor Desenvolvimento Mobile', assigned_issues: 1 },
+			{ name: 'Oscar Kemuel', user_name: 'oscarkemuel', team_github_login: 'oscarkemuel', team_name: 'Desenvolvimento Mobile', team_role: 'Desenvolvedor Desenvolvimento Mobile', assigned_issues: 1 },
+			{ name: 'Felipe Samuel', user_name: 'felipe-sbm', team_github_login: 'felipe-sbm', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
+			{ name: 'Felipe', user_name: 'felipepotigol', team_github_login: 'felipepotigol', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
+			{ name: 'Thiago Silva', user_name: 'thi-silva', team_github_login: 'thi-silva', team_name: 'Inteligência Artifical', team_role: 'Técnico em Inteligência Artificial', assigned_issues: 1 },
 		],
 		metrics: { issues: 4, drafts: 1, open_issues: 2, closed_issues: 1, recordings: 1 },
 		diagram: [
@@ -768,12 +768,12 @@ const demoProjects: Project[] = [
 		records: demoRecords.filter((record) => record.project_id === 'project-reliability'),
 		issues: demoIssues.filter((issue) => issue.project_id === 'project-reliability'),
 		team_members: [
-			{ name: 'Fernando Castro Gadelha', user_name: 'fernandocg1', team_github_login: 'fernandocg1', team_name: 'Plataforma', team_role: 'Pesquisador e Analista', assigned_issues: 1 },
-			{ name: 'Eric Inácio', user_name: 'EricInacio01', team_github_login: 'EricInacio01', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
-			{ name: 'João Arthur', user_name: 'jagaldino', team_github_login: 'jagaldino', team_name: 'Plataforma', team_role: 'Desenvolvedor Full-Stack', assigned_issues: 1 },
-			{ name: 'James Peter', user_name: 'Jmspter', team_github_login: 'Jmspter', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
-			{ name: 'André "ADG" Paiva', user_name: 'euandrelucas', team_github_login: 'euandrelucas', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
-			{ name: 'Tempest', user_name: 'GaroteDePrograma', team_github_login: 'GaroteDePrograma', team_name: 'Plataforma', team_role: 'Desenvolvedor Backend e Técnico em Cloud', assigned_issues: 1 },
+			{ name: 'Fernando Castro Gadelha', user_name: 'fernandocg1', team_github_login: 'fernandocg1', team_name: 'Desenvolvimento WEB', team_role: 'Pesquisador e Analista', assigned_issues: 1 },
+			{ name: 'Eric Inácio', user_name: 'EricInacio01', team_github_login: 'EricInacio01', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
+			{ name: 'João Arthur', user_name: 'jagaldino', team_github_login: 'jagaldino', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Full-Stack', assigned_issues: 1 },
+			{ name: 'James Peter', user_name: 'Jmspter', team_github_login: 'Jmspter', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
+			{ name: 'André "ADG" Paiva', user_name: 'euandrelucas', team_github_login: 'euandrelucas', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend', assigned_issues: 1 },
+			{ name: 'Tempest', user_name: 'GaroteDePrograma', team_github_login: 'GaroteDePrograma', team_name: 'Desenvolvimento WEB', team_role: 'Desenvolvedor Backend e Técnico em Cloud', assigned_issues: 1 },
 		],
 		metrics: { issues: 4, drafts: 1, open_issues: 2, closed_issues: 1, recordings: 2 },
 		diagram: [
@@ -824,7 +824,7 @@ const demoSprints: SprintSummary[] = [
 	},
 	{
 		id: 'sprint-demo-3',
-		name: 'Sprint 13 · Mobile',
+		name: 'Sprint 13 · Desenvolvimento Mobile',
 		goal: 'Habilitar gravação offline no aplicativo',
 		start_date: '2026-10-05',
 		end_date: '2026-10-18',
@@ -1154,6 +1154,114 @@ const demoSprintDetails: Record<string, SprintDetail> = {
 const demoSprintDetail: SprintDetail = demoSprintDetails['sprint-demo-1'];
 
 /* -------------------------------------------------------------------------- */
+/*                        Desempenho (modo demo)                               */
+/* -------------------------------------------------------------------------- */
+
+const demoPerformance: ProjectPerformance = {
+	generated_at: '2026-09-30T12:00:00.000Z',
+	period: { start: '2026-09-01', end: '2026-09-30', granularity: 'weekly' },
+	partial_history: { detected: false, message: '' },
+	summary: {
+		total_issues: 12,
+		open_issues: 4,
+		closed_issues: 6,
+		drafts: 2,
+		pending_drafts: 1,
+		confirmed_drafts: 1,
+		draft_conversion_rate: 0.5,
+		total_points: 52,
+		delivered_points: 30,
+		remaining_points: 22,
+		throughput_weekly_avg: 2.0,
+		throughput_by_week: { '2026-09-07': 2, '2026-09-14': 2, '2026-09-21': 1, '2026-09-28': 1 },
+		lead_time_avg_days: 4.2,
+		unassigned: 1,
+		late_issues: 2,
+	},
+	timeline: [
+		{ label: '2026-09-07', created: 3, closed: 1, open: 2, points_done: 4, points_done_cumulative: 4, points_total_cumulative: 14 },
+		{ label: '2026-09-14', created: 4, closed: 2, open: 4, points_done: 10, points_done_cumulative: 14, points_total_cumulative: 28 },
+		{ label: '2026-09-21', created: 3, closed: 2, open: 5, points_done: 8, points_done_cumulative: 22, points_total_cumulative: 42 },
+		{ label: '2026-09-28', created: 2, closed: 1, open: 6, points_done: 8, points_done_cumulative: 30, points_total_cumulative: 52 },
+	],
+	burndown: demoBurndown,
+	burnup: [
+		{ label: '2026-09-21', done: 0, total: 26 },
+		{ label: '2026-09-22', done: 2, total: 26 },
+		{ label: '2026-09-24', done: 5, total: 26 },
+		{ label: '2026-09-27', done: 11, total: 26 },
+		{ label: '2026-09-30', done: 18, total: 26 },
+	],
+	by_status: [
+		{ status: 'open', count: 4 },
+		{ status: 'closed', count: 6 },
+		{ status: 'draft', count: 2 },
+	],
+	by_priority: [
+		{ priority: 'high', count: 2 },
+		{ priority: 'medium', count: 3 },
+		{ priority: 'low', count: 1 },
+	],
+	by_member: [
+		{ github_login: 'MatsuCode', name: 'Bruno Ramon', assigned_issues: 4, open_count: 2, remaining_points: 10, closed_count: 2, closed_points: 12, points_done: 12, pending_drafts: 0, last_activity: '2026-09-28' },
+		{ github_login: 'quiradon', name: 'Arthur Gabriel', assigned_issues: 3, open_count: 1, remaining_points: 6, closed_count: 2, closed_points: 10, points_done: 10, pending_drafts: 1, last_activity: '2026-09-26' },
+		{ github_login: 'jagaldino', name: 'João Arthur', assigned_issues: 3, open_count: 2, remaining_points: 14, closed_count: 1, closed_points: 4, points_done: 4, pending_drafts: 0, last_activity: '2026-09-24' },
+		{ github_login: 'fernandocg1', name: 'Fernando Gadelha', assigned_issues: 1, open_count: 0, remaining_points: 0, closed_count: 1, closed_points: 4, points_done: 4, pending_drafts: 0, last_activity: '2026-09-20' },
+	],
+	activity_ranking: [
+		{ github_login: 'MatsuCode', name: 'Bruno Ramon', closed_issues: 2, points_done: 12, last_activity: '2026-09-28' },
+		{ github_login: 'quiradon', name: 'Arthur Gabriel', closed_issues: 2, points_done: 10, last_activity: '2026-09-26' },
+		{ github_login: 'jagaldino', name: 'João Arthur', closed_issues: 1, points_done: 4, last_activity: '2026-09-24' },
+		{ github_login: 'fernandocg1', name: 'Fernando Gadelha', closed_issues: 1, points_done: 4, last_activity: '2026-09-20' },
+	],
+	risks: [
+		{ type: 'overloaded', severity: 'high', member: 'jagaldino', member_name: 'João Arthur', message: 'João Arthur acumula 14 pontos abertos (2 issues).' },
+		{ type: 'stale', severity: 'medium', issue_ids: ['issue-demo-1', 'issue-demo-2'], message: '2 issues abertas levam mais de 21 dias sem fechar.' },
+		{ type: 'unassigned', severity: 'medium', issue_ids: ['issue-demo-3'], message: '1 issue aberta não tem responsável atribuído.' },
+		{ type: 'stalled_draft', severity: 'medium', issue_ids: ['issue-demo-4'], message: '1 rascunho leva mais de 3 dias sem confirmação.' },
+	],
+};
+
+const demoTeamDetails: Record<string, TeamDetail> = {
+	'team-product': {
+		id: 'team-product',
+		name: 'Produto & Design',
+		created_at: '2026-08-05T10:00:00.000Z',
+		member_count: 3,
+		members: [
+			{ github_login: 'MatsuCode', added_at: '2026-09-01T10:00:00.000Z', name: 'Bruno Ramon', avatar_url: 'https://github.com/MatsuCode.png', stats: demoPerformance.by_member[0] },
+			{ github_login: 'quiradon', added_at: '2026-09-01T10:00:00.000Z', name: 'Arthur Gabriel Araújo', avatar_url: 'https://github.com/quiradon.png', stats: demoPerformance.by_member[1] },
+			{ github_login: 'Gabriel-GH1', added_at: '2026-09-01T10:00:00.000Z', name: 'Gabriel', avatar_url: 'https://github.com/Gabriel-GH1.png', stats: undefined },
+		],
+		member_stats: demoPerformance.by_member.slice(0, 2),
+		projects: [
+			{ id: 'project-launch', name: 'Lançamento do painel', description: 'Uma experiência mais clara para acompanhar o trabalho do time.', created_at: '2026-09-01T10:00:00.000Z', updated_at: '2026-09-28T10:00:00.000Z', repositories: 5 },
+		],
+		repositories: ['anota-ai/web', 'anota-ai/api', 'anota-ai/extension', 'anota-ai/design-system', 'anota-ai/docs'],
+		issues: demoIssues.filter((issue) => issue.project_id === 'project-launch'),
+	},
+	'team-platform': {
+		id: 'team-platform',
+		name: 'Desenvolvimento WEB',
+		created_at: '2026-07-18T10:00:00.000Z',
+		member_count: 6,
+		members: (demoTeamMembers['team-platform'] ?? []).map((member, index) => ({
+			...member,
+			name: ['Fernando Castro Gadelha', 'Eric Inácio', 'João Arthur', 'James Peter', 'André Paiva', 'Tempest'][index] ?? member.github_login,
+			avatar_url: `https://github.com/${member.github_login}.png`,
+			stats: index === 2 ? demoPerformance.by_member[2] : index === 3 ? demoPerformance.by_member[3] : undefined,
+		})),
+		member_stats: [demoPerformance.by_member[2], demoPerformance.by_member[3]],
+		projects: [
+			{ id: 'project-launch', name: 'Lançamento do painel', description: 'Uma experiência mais clara para acompanhar o trabalho do time.', created_at: '2026-09-01T10:00:00.000Z', updated_at: '2026-09-28T10:00:00.000Z', repositories: 5 },
+			{ id: 'project-reliability', name: 'Confiabilidade & Infra', description: 'Processamento de áudio previsível, observável e barato.', created_at: '2026-09-02T10:00:00.000Z', updated_at: '2026-09-26T10:00:00.000Z', repositories: 3 },
+		],
+		repositories: ['anota-ai/infra', 'anota-ai/api', 'anota-ai/docs'],
+		issues: demoIssues.filter((issue) => ['project-launch', 'project-reliability'].includes(issue.project_id ?? '')),
+	},
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                   Fetch                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -1187,9 +1295,45 @@ export function demoFetch(path: string): unknown {
 
 	const teamMatch = path.match(/^\/api\/teams\/([^/]+)$/);
 	if (teamMatch) {
-		return { team: demoTeams.find((team) => team.id === teamMatch[1]) ?? demoTeams[0] };
+		const known = demoTeamDetails[teamMatch[1]];
+		if (known) return { team: known };
+		const base = demoTeams.find((team) => team.id === teamMatch[1]) ?? demoTeams[0];
+		return {
+			team: {
+				...base,
+				members: demoTeamMembers[base.id] ?? [],
+				member_stats: [],
+				projects: [],
+				repositories: [],
+				issues: [],
+			},
+		};
 	}
 	if (path === '/api/teams') return { teams: demoTeams };
+
+	if (path === '/api/audio/statuses') {
+		return {
+			statuses: ['uploaded', 'processing', 'pending_review', 'reviewed', 'error'],
+			labels: { uploaded: 'Enviada', processing: 'Processando', pending_review: 'Lista para revisar', reviewed: 'Revisada', error: 'Erro' },
+		};
+	}
+
+	if (path.startsWith('/api/github/users/search')) {
+		const query = new URL(path, 'https://demo.local').searchParams.get('q') ?? '';
+		const pool = [
+			{ github_login: 'MatsuCode', name: 'Bruno Ramon', avatar_url: 'https://github.com/MatsuCode.png' },
+			{ github_login: 'quiradon', name: 'Arthur Gabriel Araújo', avatar_url: 'https://github.com/quiradon.png' },
+			{ github_login: 'jagaldino', name: 'João Arthur', avatar_url: 'https://github.com/jagaldino.png' },
+			{ github_login: 'felipe-sbm', name: 'Felipe Samuel', avatar_url: 'https://github.com/felipe-sbm.png' },
+			{ github_login: 'thyevidal', name: 'Thierry Henry Vidal Mandogou', avatar_url: 'https://github.com/thyevidal.png' },
+		];
+		const term = query.toLowerCase();
+		return {
+			users: pool
+				.filter((user) => user.github_login.toLowerCase().includes(term) || (user.name ?? '').toLowerCase().includes(term))
+				.slice(0, 6),
+		};
+	}
 
 	if (path.startsWith('/api/github/repos/') && path.endsWith('/meta')) {
 		return {
@@ -1229,6 +1373,9 @@ export function demoFetch(path: string): unknown {
 		return { issues, total: issues.length };
 	}
 
+	const performanceMatch = path.match(/^\/api\/projects\/([^/]+)\/performance/);
+	if (performanceMatch) return { performance: demoPerformance };
+
 	const projectMatch = path.match(/^\/api\/projects\/([^/]+)$/);
 	if (projectMatch) {
 		return { project: demoProjects.find((project) => project.id === projectMatch[1]) ?? demoProjects[0] };
@@ -1259,8 +1406,10 @@ export function demoMutate(path: string, method: string, body?: unknown): unknow
 	if (path.match(/^\/api\/teams\/[^/]+\/members$/) && method === 'POST') return { members: demoTeamMembers['team-product'] };
 	if (path.match(/^\/api\/teams\/[^/]+\/members\/[^/]+$/) && method === 'DELETE') return { ok: true };
 	if (path === '/api/repositories' && method === 'POST') return { added: [], errors: [] };
+	if (path.includes('/restore')) return { ok: true, archived: false };
 	if (path.includes('/projects') && method === 'PATCH') return { project: demoProjects[0] };
 	if (path.includes('/projects') && method === 'POST') return { project: demoProjects[0] };
+	if (path.includes('/projects') && method === 'DELETE') return { ok: true, archived: true };
 	if (path.includes('/sprints') && path.includes('/tasks')) return { task: demoSprintDetail.tasks[0] };
 	if (path.includes('/sprints')) return { sprint: demoSprints[0] };
 	if (path.includes('/issues') && method === 'PATCH') return { issue: demoIssues[0] };

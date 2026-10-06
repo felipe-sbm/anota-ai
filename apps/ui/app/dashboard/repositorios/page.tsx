@@ -15,7 +15,7 @@ import { RepositoriesModal } from "@/components/dashboard/modals/repositories";
 
 export default function RepositoriesPage() {
   const router = useRouter();
-  const { token, loading } = useAuth();
+  const { token, loading, isDemo } = useAuth();
 
   const [repos, setRepos] = useState<Repository[]>([]);
   const [loadingRepos, setLoadingRepos] = useState(true);
@@ -29,7 +29,7 @@ export default function RepositoriesPage() {
   }
 
   useEffect(() => {
-    if (!loading && !token) {
+    if (!loading && !token && !isDemo) {
       router.replace("/login");
       return;
     }
@@ -50,7 +50,7 @@ export default function RepositoriesPage() {
     }
 
     loadRepos();
-  }, [loading, router, token]);
+  }, [isDemo, loading, router, token]);
 
   async function handleRemove(fullName: string) {
     if (!token) return;

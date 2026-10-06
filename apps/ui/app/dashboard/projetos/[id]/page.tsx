@@ -3,9 +3,7 @@
 import { CircleDot, FileAudio, FileText, GitBranch, UsersRound } from 'lucide-react';
 
 import { BurndownChart } from '@/components/dashboard/burndown';
-import { useProject } from '@/components/dashboard/project/context';
-import { routeHref } from '@/lib/demo';
-import { type Project } from '@/lib/api';
+import { useProject } from '@/components/dashboard/context/project';
 
 function EmptyState({ children }: { children: React.ReactNode }) {
 	return <p className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-sm text-stone-500">{children}</p>;

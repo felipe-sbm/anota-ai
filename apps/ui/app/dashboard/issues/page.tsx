@@ -25,7 +25,7 @@ function rankPriority(priority: IssuePriority) {
 
 export default function IssuesPage() {
 	const router = useRouter();
-	const { token, loading } = useAuth();
+	const { token, loading, isDemo } = useAuth();
 
 	const [issues, setIssues] = useState<Issue[]>([]);
 	const [loadingIssues, setLoadingIssues] = useState(true);
@@ -44,7 +44,7 @@ export default function IssuesPage() {
 	}
 
 	useEffect(() => {
-		if (!loading && !token) {
+		if (!loading && !token && !isDemo) {
 			router.replace('/login');
 			return;
 		}
@@ -65,7 +65,7 @@ export default function IssuesPage() {
 		}
 
 		loadIssues();
-	}, [loading, router, token]);
+	}, [isDemo, loading, router, token]);
 
 	async function handleQuickConfirm(issue: Issue) {
 		if (!token) return;

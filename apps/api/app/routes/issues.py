@@ -22,6 +22,7 @@ from ..models.database import (
     update_issue_fields,
     update_record_status,
     upsert_external_issue,
+    validate_assignee_for_project,
 )
 from ..services.github_service import GithubService
 from ..core.security import verify_jwt
@@ -86,6 +87,28 @@ async def get_repo_metadata(
             status_code=500,
             detail=f"Failed to load repo metadata: {str(e)}",
         )
+
+
+@app_router.get("/github/users/search", status_code=200)
+async def search_github_users(
+    q: str = "",
+    auth=Depends(require_auth),
+):
+    # busca membros do GitHub por login ou nome para as equipes.
+    github_access_token = auth.get("github_access_token")
+    if not github_access_token:
+        raise HTTPException(status_code=401, detail="github_access_token missing in JWT")
+    if not q.strip():
+        return {"users": []}
+
+    gh = GithubService(access_token=github_access_token)
+    try:
+        users = gh.search_users(q.strip())
+    except Exception as e:
+        # a busca pública pode falhar com tokens clássicos; retornamos vazio
+        # com o erro em vez de interromper o fluxo de adição de membros.
+        return {"users": [], "error": str(e)}
+    return {"users": users}
 
 
 @app_router.post("/issues/batch", status_code=201)
@@ -283,7 +306,15 @@ async def update_issue(
                 )
             changes["repo_full_name"] = req.repo_full_name
         if req.assignee is not None:
-            changes["assignee"] = req.assignee.strip() or None
+            assignee = req.assignee.strip().lstrip("@") or None
+            if assignee and not validate_assignee_for_project(
+                current.get("project_id"), assignee, github_login
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="O responsável não pertence às equipes do projeto.",
+                )
+            changes["assignee"] = assignee
 
     if not changes:
         return {"issue": current}

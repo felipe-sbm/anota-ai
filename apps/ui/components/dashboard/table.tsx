@@ -14,9 +14,9 @@ export const PRIORITY_LABELS: Record<IssuePriority, string> = {
 };
 
 export const PRIORITY_DOT: Record<IssuePriority, string> = {
-	high: 'bg-red-600',
-	medium: 'bg-yellow-400',
-	low: 'bg-green-600',
+	high: 'bg-red-600/85',
+	medium: 'bg-yellow-500/85',
+	low: 'bg-green-500/85',
 };
 
 function formatDate(value?: string | null) {
@@ -155,7 +155,7 @@ function IssueRow({
 					href={issue.repo_full_name ? `https://github.com/${issue.repo_full_name}` : ''}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-flex items-center gap-1 text-stone-500 hover:text-brand hover:underline decoration-dotted transition"
+					className="inline-flex items-center gap-1 text-stone-500 hover:text-brand underline decoration-dotted decoration-transparent hover:decoration-brand transition duration-200"
 				>
 					<GitBranch className="h-3.5 w-3.5" />
 					{issue.repo_full_name || 'Sem repo'}

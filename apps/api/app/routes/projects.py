@@ -7,20 +7,25 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..models.database import (
+    archive_user_project,
     attach_issue_to_project,
     attach_record_to_project,
     build_burndown,
+    count_issue_events,
     create_project,
-    delete_user_project,
     get_project_detail,
+    get_project_member_logins,
     get_user_project,
+    list_sprint_linked_issue_ids,
     list_user_projects,
     list_user_repositories,
     replace_project_links,
+    restore_user_project,
     update_project,
 )
 from ..models.schemas import ProjectCreateRequest, ProjectLinkRequest, ProjectUpdateRequest
 from ..services.auth_service import github_get_user_by_login
+from ..services.performance import compute_project_performance
 from .issues import require_auth
 from .teams import team_belongs_to_user
 
@@ -159,10 +164,70 @@ async def update_project_endpoint(project_id: str, req: ProjectUpdateRequest, au
 
 @app_router.delete("/{project_id}")
 async def delete_project_endpoint(project_id: str, auth=Depends(require_auth)):
+    # arquiva o projeto: os vínculos e métricas são mantidos para permitir
+    # sua restauração. NENHUM dado é apagado diretamente (a UI promete recuperação).
     login = auth.get("github_login")
-    if not login or not delete_user_project(project_id, login):
+    if not login or not archive_user_project(project_id, login):
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
-    return {"ok": True}
+    return {"ok": True, "archived": True}
+
+
+@app_router.post("/{project_id}/restore")
+async def restore_project_endpoint(project_id: str, auth=Depends(require_auth)):
+    login = auth.get("github_login")
+    if not login or not restore_user_project(project_id, login):
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+    return {"ok": True, "archived": False}
+
+
+@app_router.get("/{project_id}/performance")
+async def get_project_performance(
+    project_id: str,
+    period_start: str = "",
+    period_end: str = "",
+    granularity: str = "daily",
+    team_id: str = "",
+    member: str = "",
+    sprint_id: str = "",
+    auth=Depends(require_auth),
+):
+    # métricas de desempenho: resumo, evolução, burndown/burnup, throughput,
+    # lead time, distribuição, carga por pessoa e riscos acionáveis.
+    login = auth.get("github_login")
+    if not login:
+        raise HTTPException(status_code=401, detail="github_login faltando no JWT")
+
+    project = get_project_detail(project_id, login)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+
+    issues = project.get("issues", [])
+    event_count = count_issue_events(login, project_id=project_id)
+
+    team_member_logins = None
+    if team_id:
+        from .teams import get_team_member_logins_for_route
+
+        team_member_logins = get_team_member_logins_for_route(team_id, login)
+        if team_member_logins is None:
+            raise HTTPException(status_code=404, detail="Equipe não encontrada")
+
+    sprint_issue_ids = None
+    if sprint_id:
+        sprint_issue_ids = list_sprint_linked_issue_ids(sprint_id, login)
+
+    performance = compute_project_performance(
+        project=project,
+        issues=issues,
+        event_count=event_count,
+        period_start=period_start,
+        period_end=period_end,
+        granularity=granularity,
+        team_member_logins=team_member_logins,
+        member=member,
+        sprint_issue_ids=sprint_issue_ids,
+    )
+    return {"performance": performance}
 
 
 @app_router.patch("/{project_id}/records/{record_id}")

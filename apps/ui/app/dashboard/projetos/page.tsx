@@ -12,7 +12,7 @@ import { ProjectModal } from '@/components/dashboard/modals/project';
 
 export default function ProjectsPage() {
 	const router = useRouter();
-	const { token, loading } = useAuth();
+	const { token, loading, isDemo } = useAuth();
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [loadingProjects, setLoadingProjects] = useState(true);
 	const [modalOpen, setModalOpen] = useState(false);
@@ -20,7 +20,7 @@ export default function ProjectsPage() {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!loading && !token) {
+		if (!loading && !token && !isDemo) {
 			router.push('/login');
 			return;
 		}
@@ -36,10 +36,10 @@ export default function ProjectsPage() {
 			}
 		}
 		loadProjects();
-	}, [loading, router, token]);
+	}, [isDemo, loading, router, token]);
 
 	async function handleDelete(project: Project) {
-		if (!token || !window.confirm(`Tem certeza que deseja arquivar o projeto "${project.name}"? Os vínculos serão arquivados. Só é possível recuperar em um prazo de 30 dias corridos.`)) return;
+		if (!token || !window.confirm(`Arquivar o projeto "${project.name}"? Os vínculos e métricas serão preservados para restauração futura.`)) return;
 		try {
 			await deleteProject(token, project.id);
 			setProjects((current) => current.filter((item) => item.id !== project.id));
@@ -91,15 +91,16 @@ export default function ProjectsPage() {
 					{projects.map((project) => (
 						<Link
 							key={project.id}
-							className="rounded-2xl border border-stone-200 bg-gradient-to-b from-white to-stone-100 p-6 hover:border-stone-300 hover:to-60% transition duration-500 cursor-pointer group"
 							href={routeHref(`/dashboard/projetos/${project.id}`)}
+							title={`Clique para abrir o projeto "${project.name}".`}
+							className="group flex flex-col rounded-3xl border border-stone-200 bg-gradient-to-b from-white to-stone-100 p-6 transition duration-500 hover:border-stone-300 hover:to-60% cursor-pointer"
 						>
 							<div className="flex items-start justify-between gap-3">
-								<div className="flex items-center gap-3">
-									<div className="flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
+								<div className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-brand">
+									<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
 										<Rocket className="h-4 w-4" />
-									</div>
-									<h1 className="min-w-0 truncate text-lg font-medium text-stone-800 cursor-context-menu">{project.name}</h1>
+									</span>
+									<h1 className="min-w-0 truncate text-lg font-medium text-stone-800">{project.name}</h1>
 								</div>
 								<button
 									type="button"
@@ -112,7 +113,7 @@ export default function ProjectsPage() {
 								</button>
 							</div>
 							<p className="mt-3 min-h-10 text-sm text-stone-600">{project.description || 'Projeto sem descrição.'}</p>
-							<div className="mt-5 flex flex-wrap gap-2 text-xs text-stone-600">
+							<div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-stone-600">
 								<span className="inline-flex items-center gap-1 rounded-full bg-stone-50 px-2.5 py-1.5 ring-1 ring-stone-200">
 									<FolderGit2 className="h-3.5 w-3.5" />
 									{project.repositories.length} repositórios
@@ -128,6 +129,9 @@ export default function ProjectsPage() {
 								<span className="inline-flex items-center gap-1 rounded-full bg-stone-50 px-2.5 py-1.5 ring-1 ring-stone-200">
 									<AudioLines className="h-3.5 w-3.5" />
 									{project.record_count ?? 0} gravações
+								</span>
+								<span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand underline decoration-dotted decoration-transparent group-hover:decoration-brand transition duration-200">
+									Abrir projeto
 								</span>
 							</div>
 						</Link>

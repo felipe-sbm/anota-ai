@@ -6,8 +6,9 @@ from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec
 from ..models.database import (
     create_draft_issues_from_tasks,
     delete_pending_drafts,
+    get_project_member_logins,
+    get_user_project,
     update_record_status,
-        get_user_project,
 )
 from ..services.summarization_service import summarize_and_extract
 from ..services.mention_service import resolve_assignees_from_transcript
@@ -69,8 +70,14 @@ async def process_audio(
             update_record_status(req.file_id, "error", error_message=str(e))
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
-    # resolve assignees por menções (nome ou apelido)
-    resolved_assignees = resolve_assignees_from_transcript(transcript=transcript)
+    # resolve assignees por menções (nome ou apelido), filtrando pelos
+    # membros reais das equipes do projeto quando houver um projeto.
+    allowed_logins = None
+    if req.project_id:
+        allowed_logins = get_project_member_logins(req.project_id)
+    resolved_assignees = resolve_assignees_from_transcript(
+        transcript=transcript, allowed_github_logins=allowed_logins or None
+    )
 
     # sumarização e tasks
     try:

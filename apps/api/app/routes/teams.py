@@ -7,7 +7,20 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from ..core.security import verify_jwt
-from ..models.database import add_team_members, create_team, get_team_members, list_user_teams, remove_team_member, team_belongs_to_user, update_team, upsert_user_aliases
+from ..models.database import (
+    add_team_members,
+    create_team,
+    get_team_detail,
+    get_team_member_logins,
+    get_team_members,
+    list_user_teams,
+    remove_team_member,
+    team_belongs_to_user,
+    update_team,
+    upsert_user_aliases,
+)
+from ..services.auth_service import github_get_user_by_login
+from ..services.performance import summarize_member_metrics
 
 app_router = APIRouter(prefix="/api", tags=["teams"])
 
@@ -28,6 +41,14 @@ async def require_auth(authorization: str = Header(None)):
         return verify_jwt(token)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def get_team_member_logins_for_route(team_id: str, github_login: str) -> set[str] | None:
+    # usado pelas rotas de desempenho que filtram por equipe; devolve None
+    # quando a equipe não pertence ao usuário.
+    if not team_belongs_to_user(team_id, github_login):
+        return None
+    return get_team_member_logins(team_id)
 
 
 class CreateTeamRequest(BaseModel):
@@ -62,6 +83,48 @@ async def list_teams_endpoint(
 
     teams = list_user_teams(github_login)
     return {"teams": teams}
+
+
+@app_router.get("/teams/{team_id}", status_code=200)
+async def get_team_detail_endpoint(
+    team_id: str,
+    auth=Depends(require_auth),
+):
+    # detalhe de uma equipe: membros (com perfil do GitHub), projetos,
+    # repositórios e issues de cada pessoa.
+    github_login = auth.get("github_login")
+    if not github_login:
+        raise HTTPException(status_code=401, detail="github_login missing in JWT")
+    if not team_belongs_to_user(team_id, github_login):
+        raise HTTPException(status_code=404, detail="Equipe não encontrada")
+
+    detail = get_team_detail(team_id, github_login) or {}
+    issues = detail.get("issues", [])
+    members = [{"github_login": m["github_login"]} for m in detail.get("members", [])]
+    member_stats = summarize_member_metrics(members, issues)
+    stats_by_login = {m["github_login"]: m for m in member_stats}
+
+    hydrated = []
+    access_token = auth.get("github_access_token")
+    for member in detail.get("members", []):
+        item = {
+            **member,
+            "name": member["github_login"],
+            "avatar_url": None,
+            "stats": stats_by_login.get(member["github_login"]),
+        }
+        if access_token:
+            try:
+                profile = await github_get_user_by_login(access_token, member["github_login"])
+                item["name"] = profile.get("name") or member["github_login"]
+                item["avatar_url"] = profile.get("avatar_url")
+            except Exception:
+                pass
+        hydrated.append(item)
+
+    detail["members"] = hydrated
+    detail["member_stats"] = member_stats
+    return {"team": detail}
 
 
 @app_router.delete("/teams/{team_id}/members/{github_login}", status_code=200)

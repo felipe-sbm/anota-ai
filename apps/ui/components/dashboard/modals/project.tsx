@@ -105,7 +105,7 @@ export function ProjectModal({ token, project, onClose, onSave }: ProjectModalPr
 					<div className="space-y-5">
 						<label className="block">
 							<span className="mb-1 block text-xs font-semibold text-stone-600">Nome</span>
-							<input value={name} onChange={(event) => setName(event.target.value)} placeholder="ex.: Plataforma do Cliente" className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-brand" />
+							<input value={name} onChange={(event) => setName(event.target.value)} placeholder="ex.: Desenvolvimento WEB do Cliente" className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-brand" />
 						</label>
 						<label className="block">
 							<span className="mb-1 block text-xs font-semibold text-stone-600">Descrição</span>

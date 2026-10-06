@@ -20,8 +20,8 @@ class TaskOut(BaseModel):
     title: str
     body: str = ""
     assignees: list[str] = Field(default_factory=list)
-    points: int = Field(default=0, description="Importancia estimada entre 0 e 100 (sugerencia)")
-    priority: str = Field(default="medium", description='Sugerencia: "low", "medium" ou "high"')
+    points: int = Field(default=0, description="Importância estimada entre 0 e 100 (sugestão)")
+    priority: str = Field(default="medium", description='Sugestão: "low", "medium" ou "high"')
 
 
 class DecisionOut(BaseModel):
@@ -70,7 +70,7 @@ REGRAS:
 - Se assignees estiver vazio, deixe assignees de cada task como [].
 - Cada task deve incluir "points" (número inteiro entre 0 e 100, importancia estimada)
   e "priority" ("low", "medium" ou "high", urgência/impacto).
-- points e priority são APENAS UMA SUGERENCIA do sistema; o usuário poderá ajustá-los depois.
+- points e priority são APENAS UMA SUGESTÃO do sistema; o usuário poderá ajustá-los depois.
 
 OUTPUT EXCLUSIVAMENTE em JSON válido no formato:
 {{

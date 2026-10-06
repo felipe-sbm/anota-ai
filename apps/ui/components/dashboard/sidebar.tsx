@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ComponentType } from 'react';
+import { useSyncExternalStore, type ComponentType } from 'react';
 
 import Image from 'next/image';
 import { AudioLines, UsersRound, FolderGit2, CircleDot, Rocket, Cog, LayoutDashboard, X } from 'lucide-react';
 
-// import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { routeHref } from '@/lib/demo';
 
 type NavItem = {
@@ -54,7 +54,14 @@ const navItems: NavItem[] = [
 
 export function DashboardSidebar({ open, onClose, collapsed }: { open: boolean; onClose: () => void; collapsed: boolean }) {
 	const pathname = usePathname();
-	// const { user } = useAuth();
+	const { isDemo } = useAuth();
+	const navigationReady = useSyncExternalStore(
+		() => () => {},
+		() => true,
+		() => false,
+	);
+
+	const demoNavigation = navigationReady && isDemo;
 
 	return (
 		<>
@@ -66,7 +73,7 @@ export function DashboardSidebar({ open, onClose, collapsed }: { open: boolean; 
 				} lg:translate-x-0 ${collapsed ? 'lg:w-[4.5rem]' : 'lg:w-[14rem]'}`}
 			>
 				<div className={`flex h-16 shrink-0 items-center border-b border-white/10 transition-[padding] duration-300 ease-in-out ${collapsed ? 'justify-center px-2' : 'justify-between px-3'}`}>
-					<Link href={routeHref('/dashboard')} title="Voltar para a dashboard" className="flex items-center hover:bg-stone-200 rounded-lg w-full transition-colors">
+					<Link href={routeHref('/dashboard', demoNavigation)} title="Voltar para a dashboard" className="flex items-center hover:bg-stone-200 rounded-lg w-full transition-colors">
 						{!collapsed ? (
 							<Image src="/icons/theme/logo.svg" alt="Logo" width={120} height={40} loading="eager" className="h-9 w-auto ml-2" />
 						) : (
@@ -80,25 +87,23 @@ export function DashboardSidebar({ open, onClose, collapsed }: { open: boolean; 
 
 				<nav className={`flex-1 space-y-1 overflow-y-auto py-4 transition-[padding] duration-300 ease-in-out ${collapsed ? 'px-2' : 'px-3'}`}>
 					{navItems.map((item) => {
-						const active = pathname === routeHref(item.href);
+						const active = navigationReady && pathname === routeHref(item.href, demoNavigation);
 
 						if (item.disabled) {
 							return (
-								<span key={item.href} title={collapsed ? item.label : undefined} className={`flex h-8 cursor-not-allowed items-center rounded-md p-2 text-sm ${collapsed ? 'justify-center' : 'gap-2'}`}>
+								<div key={item.href} title={collapsed ? item.label : undefined} className={`flex h-8 cursor-not-allowed items-center rounded-md p-2 text-sm ${collapsed ? 'justify-center' : 'gap-2'}`}>
 									<item.Icon className="h-4 w-4 shrink-0" />
 									<span className={`truncate transition-[max-width,opacity] duration-200 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-32 opacity-100'}`}>{item.label}</span>
-								</span>
+								</div>
 							);
 						}
 
 						return (
 							<Link
 								key={item.href}
-								href={routeHref(item.href)}
+								href={routeHref(item.href, demoNavigation)}
 								title={collapsed ? item.label : undefined}
-								className={`flex h-8 items-center rounded-md p-2 text-sm transition-colors ${collapsed ? 'justify-center' : 'gap-2'} ${
-									active ? 'bg-stone-200/75 text-stone-900 font-medium hover:bg-stone-300/75' : 'text-stone-700 hover:bg-stone-200 hover:text-stone-950'
-								}`}
+								className={`flex h-8 items-center rounded-md p-2 text-sm transition-colors ${collapsed ? 'justify-center' : 'gap-2'} ${active ? 'bg-stone-200/75 text-stone-900 font-medium hover:bg-stone-300/75' : 'text-stone-700 hover:bg-stone-200 hover:text-stone-950'}`}
 							>
 								<item.Icon className="h-4 w-4 shrink-0" />
 								<span className={`truncate transition-[max-width,opacity] duration-200 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-32 opacity-100'}`}>{item.label}</span>
