@@ -689,6 +689,35 @@ def upsert_user_aliases(github_login: str, aliases: list[tuple[str, str | None]]
     conn.close()
 
 
+def list_user_aliases(github_login: str) -> list[dict]:
+    # aliases cadastrados pelo próprio usuário, mais recentes primeiro
+    conn = _get_conn()
+    rows = conn.execute(
+        """
+        SELECT alias, display_name, created_at
+        FROM user_aliases
+        WHERE github_login = ?
+        ORDER BY created_at DESC, alias ASC
+        """,
+        (github_login,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_user_alias(github_login: str, alias: str) -> bool:
+    # remove apenas alias do próprio usuário; retorna False se não existir
+    conn = _get_conn()
+    cursor = conn.execute(
+        "DELETE FROM user_aliases WHERE github_login = ? AND alias = ?",
+        (github_login, alias),
+    )
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
+
 def remove_team_member(team_id: str, github_login: str) -> None:
     conn = _get_conn()
     conn.execute(

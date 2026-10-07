@@ -10,9 +10,11 @@ from ..core.security import verify_jwt
 from ..models.database import (
     add_team_members,
     create_team,
+    delete_user_alias,
     get_team_detail,
     get_team_member_logins,
     get_team_members,
+    list_user_aliases,
     list_user_teams,
     remove_team_member,
     team_belongs_to_user,
@@ -191,6 +193,17 @@ async def update_team_endpoint(
     return {"ok": True}
 
 
+@app_router.get("/me/aliases", status_code=200)
+async def list_user_aliases_endpoint(
+    auth=Depends(require_auth),
+):
+    github_login = auth.get("github_login")
+    if not github_login:
+        raise HTTPException(status_code=401, detail="github_login missing in JWT")
+
+    return {"aliases": list_user_aliases(github_login)}
+
+
 @app_router.post("/me/aliases", status_code=200)
 async def add_user_aliases_endpoint(
     req: AddUserAliasesRequest,
@@ -202,5 +215,19 @@ async def add_user_aliases_endpoint(
 
     aliases = [(a.alias.strip(), a.display_name.strip() if a.display_name else None) for a in req.aliases]
     upsert_user_aliases(github_login=github_login, aliases=aliases)
+    return {"ok": True}
+
+
+@app_router.delete("/me/aliases/{alias}", status_code=200)
+async def delete_user_alias_endpoint(
+    alias: str,
+    auth=Depends(require_auth),
+):
+    github_login = auth.get("github_login")
+    if not github_login:
+        raise HTTPException(status_code=401, detail="github_login missing in JWT")
+
+    if not delete_user_alias(github_login=github_login, alias=alias):
+        raise HTTPException(status_code=404, detail="Alias não encontrado")
     return {"ok": True}
 

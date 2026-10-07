@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 
 from app.models import database
+from app.routes import auth_github
 
 from .conftest import create_test_issue
 
@@ -118,3 +119,94 @@ def test_update_issue_assignee_validated(seeded, client, auth_headers):
 def test_github_users_search_without_token_returns_401(client):
     response = client.get("/api/github/users/search?q=test")
     assert response.status_code == 401
+
+
+def test_github_callback_without_state_redirects_to_extension_success(client, monkeypatch):
+    monkeypatch.setattr(
+        auth_github,
+        "github_exchange_code_for_token",
+        lambda code: _async_result("github-token"),
+    )
+    monkeypatch.setattr(
+        auth_github,
+        "github_get_user",
+        lambda token: _async_result({"id": 123, "login": "octocat"}),
+    )
+
+    response = client.get(
+        "/api/auth/github/callback?code=oauth-code",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 307
+    assert response.headers["location"].startswith(
+        "http://testserver/api/auth/github/success?token="
+    )
+
+
+def test_user_aliases_crud(client, auth_headers):
+    # lista vazia no início
+    response = client.get("/api/me/aliases", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["aliases"] == []
+
+    # adiciona dois aliases
+    response = client.post(
+        "/api/me/aliases",
+        json={
+            "aliases": [
+                {"alias": "Felipe", "display_name": "Felipe SBM"},
+                {"alias": "Potigol"},
+            ]
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+
+    response = client.get("/api/me/aliases", headers=auth_headers)
+    assert response.status_code == 200
+    aliases = response.json()["aliases"]
+    assert {a["alias"] for a in aliases} == {"Felipe", "Potigol"}
+    by_alias = {a["alias"]: a for a in aliases}
+    assert by_alias["Felipe"]["display_name"] == "Felipe SBM"
+    assert by_alias["Potigol"]["display_name"] is None
+
+    # upsert atualiza display_name sem duplicar
+    response = client.post(
+        "/api/me/aliases",
+        json={"aliases": [{"alias": "Felipe", "display_name": "Felipe S."}]},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    response = client.get("/api/me/aliases", headers=auth_headers)
+    aliases = response.json()["aliases"]
+    assert len([a for a in aliases if a["alias"] == "Felipe"]) == 1
+    assert [
+        a["display_name"] for a in aliases if a["alias"] == "Felipe"
+    ] == ["Felipe S."]
+
+    # remove um alias
+    response = client.delete("/api/me/aliases/Felipe", headers=auth_headers)
+    assert response.status_code == 200
+    response = client.get("/api/me/aliases", headers=auth_headers)
+    assert {a["alias"] for a in response.json()["aliases"]} == {"Potigol"}
+
+    # remover de novo -> 404
+    response = client.delete("/api/me/aliases/Felipe", headers=auth_headers)
+    assert response.status_code == 404
+
+
+def test_user_aliases_require_auth(client):
+    assert client.get("/api/me/aliases").status_code == 401
+    assert (
+        client.post("/api/me/aliases", json={"aliases": []}).status_code == 401
+    )
+    assert client.delete("/api/me/aliases/x").status_code == 401
+
+
+def _async_result(value):
+    async def resolve():
+        return value
+
+    return resolve()

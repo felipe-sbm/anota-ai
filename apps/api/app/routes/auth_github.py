@@ -90,17 +90,12 @@ async def github_callback(
         }
     )
 
-    # volta para o frontend com o token na query string.
+    # A UI envia `state` com a sua URL de retorno. Sem state, o fluxo é o da
+    # extensão, que monitora esta URL da API para capturar o token.
     if state and _is_safe_frontend_url(state):
         separator = "&" if "?" in state else "?"
         return RedirectResponse(url=f"{state}{separator}token={jwt_token}")
 
-    if settings.UI_BASE_URL:
-        ui = settings.UI_BASE_URL.rstrip("/")
-        return RedirectResponse(url=f"{ui}/login?token={jwt_token}")
-
-    # fallback para a extensão: ela monitora abas com url começando por
-    # api/auth/github/success
     success_url = str(request.base_url) + "api/auth/github/success?token=" + jwt_token
     return RedirectResponse(url=success_url)
 
@@ -126,5 +121,4 @@ async def github_me(auth=Depends(require_auth)):
             "name": user.get("name"),
         }
     )
-
 
