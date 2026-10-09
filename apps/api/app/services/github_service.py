@@ -3,10 +3,24 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional
 
 from github import Github
+from github.AuthenticatedUser import AuthenticatedUser
+from github.GithubException import GithubException
+from github.Issue import Issue
+from github.NamedUser import NamedUser, NamedUserSearchResult
+from github.PaginatedList import PaginatedList
+from github.Repository import Repository
 
 
 class GithubService:
-    def __init__(self, access_token: str):
+    """Translate application operations into authenticated PyGithub calls.
+
+    The service returns JSON-compatible dictionaries so routes do not expose
+    PyGithub objects to FastAPI or the persistence layer. GitHub failures are
+    converted to ``RuntimeError`` with an actionable message for the caller.
+    """
+
+    def __init__(self, access_token: str) -> None:
+        """Create a client scoped to a user's OAuth access token."""
         self._gh = Github(login_or_token=access_token)
 
     def create_issues(
@@ -15,20 +29,21 @@ class GithubService:
         tasks: List[Dict[str, Any]],
         assignees: List[str],
     ) -> List[Dict[str, Any]]:
-        repo = self._gh.get_repo(repo_full_name)
+        """Create several issues and return their public identifiers."""
+        repo: Repository = self._gh.get_repo(repo_full_name)
 
         created: List[Dict[str, Any]] = []
 
         for t in tasks:
-            title = t.get("title") or "Untitled task"
-            body = t.get("body") or ""
+            title: Any | str = t.get("title") or "Untitled task"
+            body: Any | str = t.get("body") or ""
 
-            issue_assignees = t.get("assignees")
+            issue_assignees: Any | None = t.get("assignees")
             if issue_assignees is None:
-                issue_assignees = assignees
+                issue_assignees: List[str] = assignees
 
             # assinaturas do GitHub são logins; se vazio, deixa vazio.
-            issue = repo.create_issue(
+            issue: Issue = repo.create_issue(
                 title=title,
                 body=body,
                 assignees=issue_assignees or [],
@@ -53,12 +68,13 @@ class GithubService:
         milestone_number: Optional[int] = None,
         project_number: Optional[int] = None,
     ) -> Dict[str, Any]:
+        """Create one issue, optionally assigning labels or a milestone."""
         # cria uma única issue em um repositório específico com assignee opcional,
         # além de labels, milestone e projeto (adiciona um card no projeto clássico).
         from github import GithubException
         try:
-            repo = self._gh.get_repo(repo_full_name)
-            assignees = [assignee] if assignee else []
+            repo: Repository = self._gh.get_repo(repo_full_name)
+            assignees: List[str] = [assignee] if assignee else []
 
             create_kwargs: Dict[str, Any] = {
                 "title": title,
@@ -70,12 +86,12 @@ class GithubService:
             if milestone_number is not None:
                 create_kwargs["milestone"] = repo.get_milestone(milestone_number)
 
-            issue = repo.create_issue(**create_kwargs)
+            issue: Issue = repo.create_issue(**create_kwargs)
 
             project_name = None
             if project_number is not None:
                 try:
-                    project_name = self._add_issue_to_project(
+                    project_name: str | None = self._add_issue_to_project(
                         repo, project_number, issue.id
                     )
                 except Exception:
@@ -96,7 +112,7 @@ class GithubService:
                 result["project_name"] = project_name
             return result
         except GithubException as e:
-            status = e.status if hasattr(e, 'status') else 0
+            status: int = e.status if hasattr(e, 'status') else 0
             data = e.data if hasattr(e, 'data') else {}
             error_msg = str(e)
 
@@ -117,9 +133,9 @@ class GithubService:
             raise RuntimeError(f"Erro do GitHub ao criar issue em '{repo_full_name}': {error_msg}")
 
     def get_repo(self, repo_full_name: str) -> Dict[str, Any]:
-        # busca um repositório específico e normaliza no mesmo formato de list_user_repos
+        """Fetch and normalize metadata for a repository."""
         
-        repo = self._gh.get_repo(repo_full_name)
+        repo: Repository = self._gh.get_repo(repo_full_name)
         return {
             "id": repo.id,
             "full_name": repo.full_name,
@@ -132,9 +148,9 @@ class GithubService:
         }
 
     def list_user_repos(self) -> List[Dict[str, Any]]:
-        # lista os repositórios que o usuário autenticado tem acesso.
-        user = self._gh.get_user()
-        repos = user.get_repos(type="all", sort="updated", direction="desc")
+        """List repositories visible to the authenticated GitHub user."""
+        user: AuthenticatedUser = self._gh.get_user()
+        repos: PaginatedList[Repository] = user.get_repos(type="all", sort="updated", direction="desc")
         result = []
         for repo in repos:
             result.append({
@@ -152,12 +168,13 @@ class GithubService:
     def list_repo_issues(
         self, repo_full_name: str, state: str = "all"
     ) -> List[Dict[str, Any]]:
+        """List repository issues, excluding pull requests."""
         # lista as issues de um repositório
         # e ignora pull requests, já que são issues para a api do github
         # depois vou fazer para prs também, mas por enquanto só issues
 
-        repo = self._gh.get_repo(repo_full_name)
-        issues = repo.get_issues(state=state)
+        repo: Repository = self._gh.get_repo(repo_full_name)
+        issues: PaginatedList[Issue] = repo.get_issues(state=state)
         result = []
         for issue in issues:
             if getattr(issue, "pull_request", None):
@@ -179,13 +196,12 @@ class GithubService:
         return result
 
     def get_repo_meta(self, repo_full_name: str) -> Dict[str, Any]:
-        # retorna os dados auxiliares de um repositório usados na tela de criação
-        # de issues: quem pode ser atribuído, labels, milestones e projetos.
-        repo = self._gh.get_repo(repo_full_name)
+        """Return assignees, labels, milestones, and projects for issue forms."""
+        repo: Repository = self._gh.get_repo(repo_full_name)
 
         assignees: List[Dict[str, Any]] = []
         try:
-            collaborators = repo.get_collaborators(affiliation="all")
+            collaborators: PaginatedList[NamedUser] = repo.get_collaborators(affiliation="all")
             for user in collaborators:
                 if user.login not in {item["login"] for item in assignees}:
                     assignees.append(
@@ -199,7 +215,7 @@ class GithubService:
             # sem permissão para listar colaboradores; segue com o dono apenas
             pass
 
-        owner = repo.owner
+        owner: NamedUser = repo.owner
         if owner is not None and owner.login not in {item["login"] for item in assignees}:
             assignees.insert(
                 0,
@@ -267,15 +283,15 @@ class GithubService:
 
     def search_users(self, query: str, limit: int = 8) -> List[Dict[str, Any]]:
         # busca usuários do GitHub por login ou nome (para agregar membros).
-        per_page = max(1, min(int(limit or 8), 20))
+        per_page: int = max(1, min(int(limit or 8), 20))
         try:
-            matches = self._gh.search_users(query, per_page=per_page)
+            matches: PaginatedList[NamedUserSearchResult] = self._gh.search_users(query, per_page=per_page)
         except AttributeError:
             matches = self._gh.get_users(query, per_page=per_page)
         results: List[Dict[str, Any]] = []
         seen: set[str] = set()
         for user in matches:
-            login = getattr(user, "login", None)
+            login: Any | None = getattr(user, "login", None)
             if not login or login in seen:
                 continue
             seen.add(login)
@@ -319,7 +335,7 @@ class GithubService:
         # dá preferência para colunas típicas de backlog/inbox dos projetos.
         for expected in ("a fazer", "to do", "backlog", "open", "novo", "no status"):
             for column in columns:
-                name = (getattr(column, "name", "") or "").strip().lower()
+                name: str | Any = (getattr(column, "name", "") or "").strip().lower()
                 if name == expected:
                     return column
         return columns[0]

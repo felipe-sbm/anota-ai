@@ -1,3 +1,4 @@
+import React from "react"
 import { Menu, PanelLeftClose, PanelLeftOpen, User } from "lucide-react"
 
 type Props = {

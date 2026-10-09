@@ -1,4 +1,3 @@
-export { default as RecorderTab } from "./dashboard"
-export { default as HistoryTab } from "./dashboard"
-export { default as TeamsTab } from "./teams"
-
+export { default as RecorderTab } from "@/tabs/dashboard"
+export { default as HistoryTab } from "@/tabs/dashboard"
+export { default as TeamsTab } from "@/tabs/teams"

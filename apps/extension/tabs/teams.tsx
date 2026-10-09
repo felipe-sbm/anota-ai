@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react"
 
-import { API_BASE, AUTH_TOKEN_KEY } from "../config"
+import { API_BASE, AUTH_TOKEN_KEY } from "@/config"
 
 type Team = {
   id: string

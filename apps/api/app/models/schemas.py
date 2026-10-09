@@ -1,7 +1,15 @@
+"""Pydantic contracts exchanged by the API routes.
+
+These models are also the source for request and response schemas in the
+FastAPI OpenAPI document. They intentionally describe transport data only;
+business rules remain in route, service, and persistence modules.
+"""
+
 from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field
 
 class ProcessAudioRequest(BaseModel):
+    """Identify an uploaded recording and its optional project context."""
     # repo alvo no formato org/repo (opcional, se não informado só transcreve e sumariza)
     repo_full_name: Optional[str] = Field(default=None, description="GitHub repo full name, ex: org/repo")
 
@@ -14,17 +22,20 @@ class ProcessAudioRequest(BaseModel):
 
 
 class TaskSpec(BaseModel):
+    """Task extracted from a meeting transcript."""
     title: str
     body: str = ""
     assignees: List[str] = Field(default_factory=list)
 
 
 class DecisionSpec(BaseModel):
+    """Decision extracted from a meeting transcript."""
     title: str
     context: str = ""
 
 
 class ProcessAudioResponse(BaseModel):
+    """Structured result returned after audio analysis."""
     transcript: str
     summary: str
     tasks: List[TaskSpec]
@@ -65,6 +76,7 @@ class ReviewRequest(BaseModel):
 
 
 class IssueCreateRequest(BaseModel):
+    """Fields accepted when creating an issue immediately in GitHub."""
     # cria uma issue instantânea dentro do próprio sistema
 
     repo_full_name: str = Field(min_length=1)
@@ -79,6 +91,7 @@ class IssueCreateRequest(BaseModel):
 
 
 class IssueUpdateRequest(BaseModel):
+    """Optional fields used to update an internal issue or draft."""
     # atualiza campos e detalhes internos de uma tarefa (pontos, prioridade etc.)
     
     title: Optional[str] = Field(default=None, min_length=1, max_length=256)
@@ -109,6 +122,7 @@ class ProjectLinkRequest(BaseModel):
 
 
 class ConfirmIssuesRequest(BaseModel):
+    """Identifiers of drafts that should be published as GitHub issues."""
     # confirma rascunhos e os envia ao GitHub como issues reais
     
     issue_ids: List[str] = Field(min_length=1, max_length=100)
@@ -132,6 +146,7 @@ class SprintUpdateRequest(BaseModel):
 
 
 class SprintTaskCreateRequest(BaseModel):
+    """A backlog item created manually or from a meeting recording."""
     # item do sprint backlog; pode vir de reunião (record_id) ou ser manual; o
     # issue_id vincula a tarefa com uma issue existente no sistema/GitHub.
     title: str = Field(min_length=1, max_length=256)

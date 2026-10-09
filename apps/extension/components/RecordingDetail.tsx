@@ -1,3 +1,11 @@
+/**
+ * Detailed recording review flow for the browser extension.
+ *
+ * This component polls recordings that are still being processed, loads the
+ * repositories and team members available to the authenticated user, and
+ * submits the reviewed task configuration before creating GitHub issues.
+ */
+
 import { ChevronLeft } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import Select from "react-select"

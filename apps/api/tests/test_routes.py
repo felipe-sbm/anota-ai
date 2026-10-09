@@ -105,7 +105,7 @@ def test_update_issue_assignee_validated(seeded, client, auth_headers):
         headers=auth_headers,
     )
     assert response.status_code == 400
-    assert "responsable" in response.text.lower()
+    assert "responsável" in response.text.lower()
 
     # membro real -> 200
     response = client.patch(

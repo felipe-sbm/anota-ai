@@ -171,6 +171,18 @@ export type DashboardSummary = {
 	recentRecords: AudioRecord[];
 	teams: TeamResponse[];
 };
+/**
+ * Executa uma requisição GET autorizada contra a API.
+ *
+ * Adiciona o bearer token e converte o HTTP não-OK em exceção que as
+ * páginas e componentes tratam como erro de rede/session. No modo demo
+ * (`/demo*` + token de demonstração), substitui a chamada pela versão
+ * em memória definida em `demo-data`.
+ *
+ * @param path - Rota relativa a `API_BASE_URL`.
+ * @param token - JWT do utilizador autenticado.
+ * @returns O corpo da resposta, tipado pela variável genérica `T`.
+ */
 
 async function fetchAuthorized<T>(path: string, token: string): Promise<T> {
 	if (isDemoRoute() && token === DEMO_TOKEN) {
@@ -312,6 +324,21 @@ export async function removeRepository(token: string, fullName: string): Promise
 	return mutateAuthorized<{ ok: boolean }>(`${REPOSITORIES_PATH}/${fullName}`, token, 'DELETE');
 }
 
+/**
+ * Executa uma requisição HTTP mutadora (POST, PUT, PATCH, DELETE) autorizada.
+ *
+ * Reutiliza o mesmo mecanismo de autenticação e de conversão de erro que
+ * `fetchAuthorized`, mas envia um body JSON e trata a resposta como a
+ * operação definida. No modo demo substitui a chamada pela versão em
+ * memória.
+ *
+ * @param path - Rota relativa a `API_BASE_URL`.
+ * @param token - JWT do utilizador autenticado.
+ * @param method - Verbo HTTP a usar.
+ * @param body - Corpo opcional serializado em JSON.
+ * @returns A resposta JSON, tipada pela variável genérica `T`.
+ */
+
 async function mutateAuthorized<T>(path: string, token: string, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', body?: unknown): Promise<T> {
 	if (isDemoRoute() && token === DEMO_TOKEN) {
 		return demoMutate(path, method, body) as T;
@@ -374,6 +401,19 @@ export async function createInstantIssue(
 	return mutateAuthorized<{ issue: Issue }>(ISSUES_PATH, token, 'POST', payload);
 }
 
+/**
+ * Atualiza um dos campos de um draft de tarefa (ponto, prioridade, etc.)
+ * através do endpoint `PATCH /api/issues/{issueId}`.
+ *
+ * O valor de retorno é aproximadamente a issue transformada, o que permite
+ * atualizar o estado local do dashboard sem uma nova renderização completa.
+ *
+ * @param token - JWT do utilizador autenticado.
+ * @param issueId - ID do draft extraído de uma gravação.
+ * @param payload - Campos a atualizar (subset de {@link Issue}).
+ * @returns A issue actualizada.
+ */
+
 export async function updateIssue(token: string, issueId: string, payload: Record<string, unknown>): Promise<{ issue: Issue }> {
 	return mutateAuthorized<{ issue: Issue }>(`${ISSUES_PATH}/${issueId}`, token, 'PATCH', payload);
 }
@@ -407,7 +447,7 @@ export type Project = {
 	issues?: Issue[];
 	team_members?: ProjectMember[];
 	metrics?: ProjectMetric;
-	diagram?: Array<{ label: string; value: number; }>;
+	diagram?: Array<{ label: string; value: number }>;
 	burndown?: BurndownPoint[];
 };
 
@@ -422,6 +462,14 @@ export async function fetchProjects(token: string): Promise<Project[]> {
 	const data = await fetchAuthorized<{ projects: Project[] }>('/api/projects', token);
 	return data.projects ?? [];
 }
+
+/**
+ * Carrega um projeto (e os seus vínculos) a partir do dashboard.
+ *
+ * @param token - JWT do utilizador autenticado.
+ * @param projectId - ID do projeto apresentado na URL.
+ * @returns O projeto completo, já decorado com métricas e membros.
+ */
 
 export async function fetchProject(token: string, projectId: string): Promise<Project> {
 	const data = await fetchAuthorized<{ project: Project }>(`/api/projects/${projectId}`, token);
@@ -534,6 +582,19 @@ export type PerformanceFilters = {
 	sprint_id?: string;
 };
 
+/**
+ * Métricas de desempenho de projeto: resumo, evolução, burndown/burnup,
+ * throughput, lead time, distribuição por prioridade/membro, atividade e
+ * riscos.
+ *
+ * @param token - JWT do utilizador autenticado.
+ * @param projectId - ID do projeto.
+ * @param filters - Período, granularidade, equipe, membro e sprint de
+ *   referência.
+ * @returns O objeto de desempenho calculado a partir dos dados locais e dos
+ *  eventos de issue.
+ */
+
 export async function fetchProjectPerformance(token: string, projectId: string, filters: PerformanceFilters = {}): Promise<ProjectPerformance> {
 	const params = new URLSearchParams();
 	if (filters.period_start) params.set('period_start', filters.period_start);
@@ -547,14 +608,51 @@ export async function fetchProjectPerformance(token: string, projectId: string, 
 	return data.performance;
 }
 
+/**
+ * Vincula uma gravação a um projeto (`PATCH /api/projects/{projectId}/records/{recordId}`).
+ *
+ * Surge do fluxo de revisão: depois de verificada uma gravação, o utilizador
+ * pode associá-la a um projeto, o que permite que o dashboards de desempenho
+ * a considere dentro do contexto do projeto.
+ *
+ * @param token - JWT do utilizador autenticado.
+ * @param projectId - ID do projeto.
+ * @param recordId - ID da gravação a vincular.
+ * @returns A gravação actualizada (com o projeto anexado).
+ */
+
 export async function attachRecordToProject(token: string, projectId: string, recordId: string): Promise<AudioRecord> {
 	const data = await mutateAuthorized<{ record: AudioRecord }>(`/api/projects/${projectId}/records/${recordId}`, token, 'PATCH');
 	return data.record;
 }
 
+/**
+ * Remove um draft (issue sem vínculo com GitHub) do projeto.
+ *
+ * A exclusão é feita localmente no estado do projeto e, no backend,
+ * desaparece o registro `issues` que pertence àquele utilizador e àquela
+ * gravação.
+ *
+ * @param token - JWT do utilizador autenticado.
+ * @param issueId - ID do draft a descartar.
+ * @returns `{ ok: true }` se o draft foi removido.
+ */
+
 export async function deleteIssue(token: string, issueId: string): Promise<{ ok: boolean }> {
 	return mutateAuthorized<{ ok: boolean }>(`${ISSUES_PATH}/${issueId}`, token, 'DELETE');
 }
+
+/**
+ * Confirma um ou mais drafts, a transformar em issues reais no GitHub.
+ *
+ * Aceita apenas drafts (`source === 'draft'`) e, para cada um, chama o
+ * `POST /api/issues/confirm`. Falhas nos itens do lote são reportadas
+ * individualmente; os itens restantes não são apagados.
+ *
+ * @param token - JWT do utilizador autenticado.
+ * @param issueIds - IDs dos drafts a confirmar.
+ * @returns O resultado de cada item (`ok`, `already`, `issue`, `error`).
+ */
 
 export async function confirmIssues(token: string, issueIds: string[]): Promise<{ results: ConfirmIssueResult[] }> {
 	return mutateAuthorized<{ results: ConfirmIssueResult[] }>(`${ISSUES_PATH}/confirm`, token, 'POST', { issue_ids: issueIds });

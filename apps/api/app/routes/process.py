@@ -1,6 +1,12 @@
+"""Endpoints for transcription, summarization, and task extraction."""
+
 from __future__ import annotations
+
 import os
+from typing import Any, List
 from fastapi import APIRouter, Depends, Header, HTTPException
+
+from app.services.summarization_service import SummaryTasksOut
 
 from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec, DecisionSpec
 from ..models.database import (
@@ -19,12 +25,12 @@ from ..core.config import settings
 
 app_router = APIRouter(prefix="/api", tags=["process"])
 
-UPLOAD_DIR = os.path.abspath(
+UPLOAD_DIR: str = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
 )
 
 
-def get_bearer_token(authorization: str | None):
+def get_bearer_token(authorization: str | None) -> None | str:
     if not authorization:
         return None
     if not authorization.startswith("Bearer "):
@@ -32,8 +38,8 @@ def get_bearer_token(authorization: str | None):
     return authorization.split(" ", 1)[1]
 
 
-async def require_auth(authorization: str = Header(None)):
-    token = get_bearer_token(authorization)
+async def require_auth(authorization: str = Header(None)) -> dict[str, Any]:
+    token: None | str = get_bearer_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization")
     try:
@@ -42,19 +48,33 @@ async def require_auth(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-@app_router.post("/process-audio", response_model=ProcessAudioResponse)
+@app_router.post(
+    "/process-audio",
+    response_model=ProcessAudioResponse,
+    summary="Process a recording",
+    description=(
+        "Transcribes an uploaded recording, extracts a summary, decisions, "
+        "and tasks, then stores task drafts for later review."
+    ),
+    responses={
+        400: {"description": "Missing file or invalid project"},
+        401: {"description": "Invalid JWT"},
+        404: {"description": "Recording not found"},
+        500: {"description": "Transcription or summarization failed"},
+    },
+)
 async def process_audio(
     req: ProcessAudioRequest,
     auth=Depends(require_auth),
-):
+) -> ProcessAudioResponse:
     # resolve arquivo pelo file_id
     if not req.file_id:
         raise HTTPException(status_code=400, detail="file_id is required")
 
-    candidates = [f for f in os.listdir(UPLOAD_DIR) if f.startswith(req.file_id)]
+    candidates: list[str] = [f for f in os.listdir(UPLOAD_DIR) if f.startswith(req.file_id)]
     if not candidates:
         raise HTTPException(status_code=404, detail="file_id not found")
-    file_path = os.path.join(UPLOAD_DIR, candidates[0])
+    file_path: str = os.path.join(UPLOAD_DIR, candidates[0])
 
     # atualiza o status para processing
     if req.file_id:
@@ -64,7 +84,7 @@ async def process_audio(
     try:
         from ..services.whisper_service import transcribe_file
 
-        transcript = transcribe_file(file_path, model_size=settings.WHISPER_MODEL_SIZE)
+        transcript: str = transcribe_file(file_path, model_size=settings.WHISPER_MODEL_SIZE)
     except Exception as e:
         if req.file_id:
             update_record_status(req.file_id, "error", error_message=str(e))
@@ -74,14 +94,14 @@ async def process_audio(
     # membros reais das equipes do projeto quando houver um projeto.
     allowed_logins = None
     if req.project_id:
-        allowed_logins = get_project_member_logins(req.project_id)
-    resolved_assignees = resolve_assignees_from_transcript(
+        allowed_logins: set[str] = get_project_member_logins(req.project_id)
+    resolved_assignees: List[str] = resolve_assignees_from_transcript(
         transcript=transcript, allowed_github_logins=allowed_logins or None
     )
 
     # sumarização e tasks
     try:
-        summarized = await summarize_and_extract(
+        summarized: SummaryTasksOut = await summarize_and_extract(
             transcript=transcript,
             assignees=resolved_assignees or req.assignees,
             ollama_base_url=settings.OLLAMA_BASE_URL,

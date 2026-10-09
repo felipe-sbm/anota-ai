@@ -1,3 +1,10 @@
+"""SQLite persistence for recordings, drafts, projects, teams, and sprints.
+
+Each public helper opens a short-lived connection and returns plain Python
+structures. Ownership checks are performed with the authenticated GitHub login
+before mutations are applied.
+"""
+
 from __future__ import annotations
 
 import json
@@ -62,6 +69,7 @@ def _serialize_event_value(value: Any) -> Optional[str]:
 
 
 def init_db():
+    """Create the local schema and apply the lightweight migrations."""
     conn = _get_conn()
     conn.execute(
         """
@@ -329,6 +337,7 @@ def insert_record(
 
 
 def update_record_status(record_id: str, status: str, **kwargs):
+    """Update recording state and any supplied processing result fields."""
     # atualiza o status e campos opcionais (transcript, summary, tasks etc).
     # usa o vocabulário canônico para que extensão, API e dashboard coincidam.
     conn = _get_conn()
@@ -361,6 +370,7 @@ def update_record_status(record_id: str, status: str, **kwargs):
 
 
 def get_record(record_id: str) -> Optional[dict]:
+    """Return one recording, or ``None`` when it does not exist."""
     conn = _get_conn()
     row = conn.execute("SELECT * FROM audio_records WHERE id = ?", (record_id,)).fetchone()
     conn.close()
@@ -370,6 +380,7 @@ def get_record(record_id: str) -> Optional[dict]:
 
 
 def list_records(user_github_login: str, limit: int = 50, offset: int = 0) -> list[dict]:
+    """List recordings owned by a user using limit/offset pagination."""
     conn = _get_conn()
     rows = conn.execute(
         """
@@ -767,6 +778,7 @@ def get_team_member_logins(team_id: str) -> set[str]:
     conn.close()
     return {str(r["github_login"]) for r in rows}
 
+    # logins de todas as pessoas das equipes vinculadas ao projeto
 
 def get_project_member_logins(project_id: str) -> set[str]:
     # logins de todas as pessoas das equipes vinculadas ao projeto
@@ -860,6 +872,7 @@ def get_team_detail(team_id: str, github_login: str) -> Optional[dict]:
     conn.close()
     return detail
 
+    # issues vinculadas a uma sprint por meio das tarefas do backlog da sprint
 
 def list_sprint_linked_issue_ids(sprint_id: str, github_login: str) -> set[str]:
     # issues vinculadas a uma sprint por meio das tarefas do backlog da sprint
@@ -988,6 +1001,7 @@ def create_issue_row(
     issue_id: str,
     github_login: str,
     repo_full_name: str,
+    # os pontos/prioridade vivem no sistema, pois o GitHub não os armazena
     title: str,
     body: str = "",
     source: str = "external",
@@ -1050,6 +1064,7 @@ def create_issue_row(
             issue_id=issue_id,
             event_type=EVENT_ISSUE_CREATED,
             actor_github_login=github_login,
+    # insere ou atualiza uma issue externa proveniente do github.
             created_by_github_login=github_login,
             project_id=project_id,
             record_id=record_id,
@@ -1355,6 +1370,7 @@ def delete_user_issue(issue_id: str, github_login: str) -> bool:
     return deleted
 
 
+    # cria rascunhos a partir das tasks extraídas de uma reunião.
 def create_draft_issues_from_tasks(
     record_id: str,
     github_login: str,
@@ -1427,6 +1443,9 @@ def create_draft_issues_from_tasks(
         )
     return rows
 
+    # vincula rascunhos pendentes de uma reunião com as issues criadas.
+
+    # elimina rascunhos ainda não confirmados de uma reunião (para regravar).
 
 def delete_pending_drafts(record_id: str, github_login: str) -> int:
     # elimina rascunhos ainda não confirmados de uma reunião (para regravar).
@@ -1497,6 +1516,7 @@ def mark_drafts_confirmed(
     return len(pending)
 
 
+    # agrega uma issue criada ao registro de áudio (para manter a página da gravação).
 def append_created_issue_to_record(file_id: str, meta: Dict[str, Any]) -> None:
     # agrega uma issue criada ao registro de áudio (para manter a página da gravação).
     record = get_record(file_id)
@@ -1516,6 +1536,7 @@ def append_created_issue_to_record(file_id: str, meta: Dict[str, Any]) -> None:
         not (isinstance(item, dict) and item.get("id") == meta.get("id"))
         for item in existing
     ):
+
         existing = existing + [meta]
 
     conn = _get_conn()
@@ -1540,7 +1561,6 @@ def create_project(project_id: str, github_login: str, name: str, description: s
     row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
     conn.close()
     return dict(row) if row else {}
-
 
 def get_user_project(
     project_id: str, github_login: str, include_archived: bool = False
@@ -1622,7 +1642,6 @@ def delete_user_project(project_id: str, github_login: str) -> bool:
     conn.commit()
     conn.close()
     return cursor.rowcount > 0
-
 
 def archive_user_project(project_id: str, github_login: str) -> bool:
     # arquiva o projeto: os vínculos e métricas são mantidos para permitir

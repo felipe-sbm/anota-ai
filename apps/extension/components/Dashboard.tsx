@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { AUTH_TOKEN_KEY, API_BASE } from "../config"
+import { AUTH_TOKEN_KEY, API_BASE } from "@/config"
 
 type Recording = {
   id: string

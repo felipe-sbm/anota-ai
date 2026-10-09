@@ -20,12 +20,9 @@ type Props = {
 export default function Sidebar({
   activeTab,
   onTabChange,
-  userName,
   recordingCount,
   isCollapsed,
   onLogout,
-  isInsideTab,
-  onOpenInTab
 }: Props) {
   return (
     <aside className={`sidebar ${isCollapsed ? "sidebar-collapsed" : ""}`}>

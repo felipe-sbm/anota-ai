@@ -137,6 +137,16 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 		</ProjectContext.Provider>
 	);
 }
+/**
+ * Hook that exposes the current project managed by {@link ProjectProvider}.
+ *
+ * The provider loads the project identified by the URL `id` segment and keeps
+ * it in memory. Mutating operations (`confirmIssue`, `removeIssue`,
+ * `updateIssuePoints`, `updateIssuePriority`) delegate to {@link api} and then
+ * update the local copy synchronously so the UI stays responsive.
+ *
+ * @returns The project context value. Throws if used outside `<ProjectProvider>`.
+ */
 
 export function useProject(): ProjectContextValue {
 	const context = useContext(ProjectContext);

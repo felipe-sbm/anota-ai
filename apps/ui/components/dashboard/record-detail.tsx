@@ -61,6 +61,15 @@ type RecordDetailProps = {
 	/** id da gravação; quando omitido, é lido do último segmento da URL. */
 	recordId?: string;
 };
+/**
+ * Página de detalhe de uma gravação: exibe transcrição, resumo, tarefas
+ * extraídas, decisões e o vínculo (ou não) com repositório/issue, permitindo
+ * associar a gravação a um projeto.
+ *
+ * @param recordIdProp - ID da gravação; quando omitido, é lido do último
+ *   segmento da URL.
+ * @returns O detalhe da gravação e os controles de vínculo ao projeto.
+ */
 
 export function RecordDetail({ recordId: recordIdProp }: RecordDetailProps) {
 	const router = useRouter();

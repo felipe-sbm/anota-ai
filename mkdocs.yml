@@ -1,0 +1,52 @@
+site_name: Anota Aí
+site_description: Documentação técnica do Anota Aí
+site_url: https://felipe-sbm.github.io/anota-ai/
+
+theme:
+  name: material
+  language: pt-BR
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - apps/api
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+
+nav:
+  - Início: index.md
+  - Arquitetura: arquitetura.md
+  - Fluxos e entidades: fluxos.md
+  - Backend:
+      - Visão geral: backend.md
+      - API e rotas: api/rotas.md
+      - Serviços: api/servicos.md
+  - Frontend:
+      - Dashboard web: frontend.md
+      - Extensão: extensao.md
+  - Como funciona: como_funciona.md
+  - Guia de uso: guia.md
+  - Código aberto: codigo_aberto.md
+  - API:
+      - Visão geral: api/index.md
+  - Avaliação do TCC: avaliacao.md

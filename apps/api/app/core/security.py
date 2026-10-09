@@ -1,5 +1,6 @@
-from __future__ import annotations
+"""JWT creation and validation used by protected API routes."""
 
+from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -9,7 +10,14 @@ from .config import settings
 
 
 def create_jwt(payload: dict[str, Any]) -> str:
-    # cria um JWT assinado com os claims padrão (iat/exp) da API.
+    """Sign a JWT containing the caller identity and standard time claims.
+
+    Args:
+        payload: Identity claims, normally returned by the GitHub OAuth flow.
+
+    Returns:
+        An encoded JWT accepted by the protected API routes.
+    """
     now = datetime.now(timezone.utc)
     data = {
         **payload,
@@ -20,7 +28,12 @@ def create_jwt(payload: dict[str, Any]) -> str:
 
 
 def verify_jwt(token: str) -> dict[str, Any]:
-    # verifica a validade do JWT e retorna os claims decodificados.
+    """Validate a JWT and return its decoded claims.
+
+    Raises:
+        ValueError: If the token is malformed, expired, or signed with a
+            different secret/algorithm.
+    """
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])
     except JWTError as exc:

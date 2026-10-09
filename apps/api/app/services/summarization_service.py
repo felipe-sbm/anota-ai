@@ -1,3 +1,11 @@
+"""Meeting-analysis pipeline built with LangGraph.
+
+The graph prepares transcript content, optionally calls Groq or Ollama for
+structured JSON, and falls back to deterministic heuristics when LLM analysis
+is disabled or unavailable. Its output is deliberately typed before it is
+returned to routes.
+"""
+
 from __future__ import annotations
 
 import json
@@ -17,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class TaskOut(BaseModel):
+    """AI-generated or fallback task suggestion."""
     title: str
     body: str = ""
     assignees: list[str] = Field(default_factory=list)
@@ -25,11 +34,13 @@ class TaskOut(BaseModel):
 
 
 class DecisionOut(BaseModel):
+    """Decision identified in the meeting."""
     title: str
     context: str = ""
 
 
 class SummaryTasksOut(BaseModel):
+    """Complete result of meeting summarization and task extraction."""
     summary: str
     tasks: list[TaskOut]
     decisions: list[DecisionOut] = Field(default_factory=list)
@@ -54,6 +65,7 @@ class MeetingState(TypedDict, total=False):
 
 
 def build_prompt(transcript: str, assignees: list[str]) -> str:
+    """Build the strict JSON prompt used for task extraction."""
     # forçamos JSON estrito no output para facilitar o parse do resultado.
     return f"""
 Você é um assistente que transforma o conteúdo de uma gravação em:
@@ -348,6 +360,11 @@ async def summarize_and_extract(
     transcript: str, assignees: list[str],
     *, ollama_base_url: str = "", ollama_model: str = "",
     llm_enabled: bool = False) -> SummaryTasksOut:
+    """Run the analysis graph and return summary, decisions, and tasks.
+
+    The function never publishes GitHub issues. Persistence and publication
+    are explicit responsibilities of the route layer after user review.
+    """
 
     if not transcript.strip():
         return SummaryTasksOut(summary="", tasks=[], decisions=[])

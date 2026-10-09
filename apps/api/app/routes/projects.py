@@ -1,3 +1,5 @@
+"""Project and project-performance endpoints."""
+
 from __future__ import annotations
 
 import uuid

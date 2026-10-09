@@ -1,5 +1,8 @@
+"""Issue, draft, and GitHub synchronization endpoints."""
+
 from __future__ import annotations
 
+from typing import Any, Dict, List
 import uuid
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -30,7 +33,7 @@ from ..core.security import verify_jwt
 app_router = APIRouter(prefix="/api", tags=["issues"])
 
 
-def _get_bearer_token(authorization: str | None):
+def _get_bearer_token(authorization: str | None) -> None | str:
     if not authorization:
         return None
     if not authorization.startswith("Bearer "):
@@ -38,8 +41,8 @@ def _get_bearer_token(authorization: str | None):
     return authorization.split(" ", 1)[1]
 
 
-async def require_auth(authorization: str = Header(None)):
-    token = _get_bearer_token(authorization)
+async def require_auth(authorization: str = Header(None)) -> dict[str, Any]:
+    token: None | str = _get_bearer_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization")
     try:
@@ -48,10 +51,15 @@ async def require_auth(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-@app_router.get("/github/repos", status_code=200)
+@app_router.get(
+    "/github/repos",
+    status_code=200,
+    summary="List accessible GitHub repositories",
+    description="Lists repositories visible to the authenticated GitHub account.",
+)
 async def list_github_repos(
     auth=Depends(require_auth),
-):
+) -> dict[str, List[Dict[str, Any]]]:
     # lista os repositórios que o usuário autenticado tem acesso no github.
     github_access_token = auth.get("github_access_token")
     if not github_access_token:
@@ -60,7 +68,7 @@ async def list_github_repos(
     gh = GithubService(access_token=github_access_token)
 
     try:
-        repos = gh.list_user_repos()
+        repos: List[Dict[str, Any]] = gh.list_user_repos()
         return {"repos": repos}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list repos: {str(e)}")
@@ -70,7 +78,7 @@ async def list_github_repos(
 async def get_repo_metadata(
     repo_full_name: str,
     auth=Depends(require_auth),
-):
+) -> Dict[str, Any]:
     # dados auxiliares de um repositório para a tela de criar issues:
     # assignees, labels, milestones e projetos do repositório.
     
@@ -103,7 +111,7 @@ async def search_github_users(
 
     gh = GithubService(access_token=github_access_token)
     try:
-        users = gh.search_users(q.strip())
+        users: List[Dict[str, Any]] = gh.search_users(q.strip())
     except Exception as e:
         # a busca pública pode falhar com tokens clássicos; retornamos vazio
         # com o erro em vez de interromper o fluxo de adição de membros.
@@ -111,7 +119,12 @@ async def search_github_users(
     return {"users": users}
 
 
-@app_router.post("/issues/batch", status_code=201)
+@app_router.post(
+    "/issues/batch",
+    status_code=201,
+    summary="Create a batch of GitHub issues",
+    description="Publishes several issue payloads and optionally associates them with a recording.",
+)
 async def create_issues_batch(
     req: CreateIssuesBatchRequest,
     auth=Depends(require_auth),
@@ -128,7 +141,7 @@ async def create_issues_batch(
 
     for task in req.tasks:
         try:
-            issue = gh.create_issue_in_repo(
+            issue: Dict[str, Any] = gh.create_issue_in_repo(
                 repo_full_name=task.repo_full_name,
                 title=task.title,
                 body=task.body,
@@ -175,7 +188,12 @@ async def create_issues_batch(
 # issues do sistema
 
 
-@app_router.get("/issues", status_code=200)
+@app_router.get(
+    "/issues",
+    status_code=200,
+    summary="List internal issues and drafts",
+    description="Returns issues visible to the authenticated user, including unpublished drafts.",
+)
 async def list_issues(
     search: str = "",
     source: str = "",
@@ -209,7 +227,12 @@ async def list_issues(
     return {"issues": issues, "total": total}
 
 
-@app_router.post("/issues", status_code=201)
+@app_router.post(
+    "/issues",
+    status_code=201,
+    summary="Create a GitHub issue",
+    description="Creates and stores one issue using the authenticated GitHub token.",
+)
 async def create_instant_issue(
     req: IssueCreateRequest,
     auth=Depends(require_auth),
@@ -232,7 +255,7 @@ async def create_instant_issue(
 
     gh = GithubService(access_token=github_access_token)
     try:
-        created = gh.create_issue_in_repo(
+        created: Dict[str, Any] = gh.create_issue_in_repo(
             repo_full_name=req.repo_full_name,
             title=req.title,
             body=req.body or "",
@@ -263,7 +286,12 @@ async def create_instant_issue(
     return {"issue": issue}
 
 
-@app_router.patch("/issues/{issue_id}", status_code=200)
+@app_router.patch(
+    "/issues/{issue_id}",
+    status_code=200,
+    summary="Update an issue or draft",
+    description="Updates editable issue metadata and project assignment.",
+)
 async def update_issue(
     issue_id: str,
     req: IssueUpdateRequest,
@@ -306,7 +334,7 @@ async def update_issue(
                 )
             changes["repo_full_name"] = req.repo_full_name
         if req.assignee is not None:
-            assignee = req.assignee.strip().lstrip("@") or None
+            assignee: str | None = req.assignee.strip().lstrip("@") or None
             if assignee and not validate_assignee_for_project(
                 current.get("project_id"), assignee, github_login
             ):
@@ -327,7 +355,7 @@ async def update_issue(
 async def delete_issue(
     issue_id: str,
     auth=Depends(require_auth),
-):
+) -> dict[str, bool]:
     # elimina do sistema uma issue do tipo rascunho.
     github_login = auth.get("github_login")
     if not github_login:
@@ -346,7 +374,12 @@ async def delete_issue(
     return {"ok": True}
 
 
-@app_router.post("/issues/confirm", status_code=200)
+@app_router.post(
+    "/issues/confirm",
+    status_code=200,
+    summary="Confirm issue drafts",
+    description="Publishes selected drafts to GitHub and records the resulting external issue IDs.",
+)
 async def confirm_issues(
     req: ConfirmIssuesRequest,
     auth=Depends(require_auth),
@@ -380,7 +413,7 @@ async def confirm_issues(
             continue
 
         try:
-            created = gh.create_issue_in_repo(
+            created: Dict[str, Any] = gh.create_issue_in_repo(
                 repo_full_name=issue["repo_full_name"],
                 title=issue["title"],
                 body=issue["body"] or "",
@@ -422,7 +455,12 @@ async def confirm_issues(
     return {"results": results}
 
 
-@app_router.post("/issues/sync", status_code=200)
+@app_router.post(
+    "/issues/sync",
+    status_code=200,
+    summary="Synchronize GitHub issues",
+    description="Refreshes local issue data from repositories available to the authenticated user.",
+)
 async def sync_external_issues(
     auth=Depends(require_auth),
 ):
@@ -442,7 +480,7 @@ async def sync_external_issues(
 
     for repo in repos:
         try:
-            issues = gh.list_repo_issues(repo["full_name"], state="all")
+            issues: List[Dict[str, Any]] = gh.list_repo_issues(repo["full_name"], state="all")
         except Exception as e:
             errors.append({"repo": repo["full_name"], "error": str(e)})
             continue

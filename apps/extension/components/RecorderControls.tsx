@@ -1,3 +1,4 @@
+import React from "react"
 import { Play, Square, Send, Pause, Eraser } from "lucide-react"
 
 type Props = {
@@ -78,7 +79,7 @@ export default function RecorderControls({
             <button
               onClick={onReset}
               className="btn-send"
-              style={{ background: "#8b5cf6", boxShadow: "0 4px 12px rgba(139, 92, 246, 0.2)" }}>
+              style={{ background: "#4169e1", boxShadow: "0 4px 12px rgba(65, 105, 225, 0.25)" }}>
               Nova Gravação
             </button>
           )}

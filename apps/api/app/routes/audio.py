@@ -1,7 +1,11 @@
+"""Endpoints for uploading and retrieving meeting recordings."""
+
 from __future__ import annotations
 
+from io import BufferedWriter
 import os
 import shutil
+from typing import Any
 import uuid
 
 from fastapi import APIRouter, Depends, Header, UploadFile, File, HTTPException
@@ -13,14 +17,14 @@ from ..models.schemas import ReviewRequest
 
 app_router = APIRouter(prefix="/api/audio", tags=["audio"])
 
-UPLOAD_DIR = os.path.abspath(
+UPLOAD_DIR: str = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
 )
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-def get_bearer_token(authorization: str | None):
+def get_bearer_token(authorization: str | None) -> None | str:
     if not authorization:
         return None
     if not authorization.startswith("Bearer "):
@@ -28,8 +32,8 @@ def get_bearer_token(authorization: str | None):
     return authorization.split(" ", 1)[1]
 
 
-async def require_auth(authorization: str = Header(None)):
-    token = get_bearer_token(authorization)
+async def require_auth(authorization: str = Header(None)) -> dict[str, Any]:
+    token: None | str = get_bearer_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization")
     try:
@@ -38,7 +42,12 @@ async def require_auth(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-@app_router.post("/upload")
+@app_router.post(
+    "/upload",
+    summary="Upload a recording",
+    description="Stores an authenticated user's audio recording and creates its database record.",
+    responses={400: {"description": "Missing filename"}, 401: {"description": "Invalid JWT"}},
+)
 async def upload_audio(
     file: UploadFile = File(...),
     auth=Depends(require_auth),
@@ -46,11 +55,11 @@ async def upload_audio(
     if not file.filename:
         raise HTTPException(status_code=400, detail="file.filename is required")
 
-    ext = os.path.splitext(file.filename)[1] or ".webm"
-    file_id = uuid.uuid4().hex
-    filename = f"{file_id}{ext}"
+    ext: str = os.path.splitext(file.filename)[1] or ".webm"
+    file_id: str = uuid.uuid4().hex
+    filename: str = f"{file_id}{ext}"
 
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path: str = os.path.join(UPLOAD_DIR, filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
@@ -72,7 +81,11 @@ async def upload_audio(
     }
 
 
-@app_router.get("/statuses", status_code=200)
+@app_router.get(
+    "/statuses",
+    summary="List recording statuses",
+    description="Returns the canonical status values and display labels shared by clients.",
+)
 async def audio_statuses(auth=Depends(require_auth)):
     # vocabulário canônico de estados de uma gravação compartilhado pela
     # extensão, pela API e pelo dashboard.
@@ -82,7 +95,11 @@ async def audio_statuses(auth=Depends(require_auth)):
     }
 
 
-@app_router.get("/records")
+@app_router.get(
+    "/records",
+    summary="List recordings",
+    description="Lists the authenticated user's recordings with pagination.",
+)
 async def list_audio_records(
     limit: int = 50,
     offset: int = 0,
@@ -98,16 +115,21 @@ async def list_audio_records(
 
 
 @app_router.get("/records/count")
-async def count_audio_records(auth=Depends(require_auth)):
+async def count_audio_records(auth=Depends(require_auth)) -> dict[str, int]:
     github_login = auth.get("github_login", "")
     if not github_login:
         raise HTTPException(status_code=400, detail="github_login not found in token")
 
-    total = count_records(user_github_login=github_login)
+    total: int = count_records(user_github_login=github_login)
     return {"count": total}
 
 
-@app_router.get("/records/{file_id}")
+@app_router.get(
+    "/records/{file_id}",
+    summary="Get a recording",
+    description="Returns one recording owned by the authenticated user.",
+    responses={404: {"description": "Recording not found or not owned by the user"}},
+)
 async def get_audio_record(
     file_id: str,
     auth=Depends(require_auth),
@@ -124,8 +146,12 @@ async def get_audio_record(
     return {"record": record}
 
 
-@app_router.post("/records/{file_id}/review")
-
+@app_router.post(
+    "/records/{file_id}/review",
+    summary="Review extracted tasks",
+    description="Stores the user's reviewed task list and marks the recording as reviewed.",
+    responses={404: {"description": "Recording not found"}, 409: {"description": "Recording is not ready"}},
+)
 async def review_audio_record(
     file_id: str,
     req: ReviewRequest,
@@ -138,7 +164,6 @@ async def review_audio_record(
     if record.get("status") not in {"pending_review", "reviewed"}:
         raise HTTPException(status_code=409, detail="Record is not ready for review")
 
-    tasks = [task.model_dump() for task in req.tasks]
+    tasks: list[dict[str, Any]] = [task.model_dump() for task in req.tasks]
     update_record_status(file_id, "reviewed", tasks=tasks)
     return {"file_id": file_id, "status": "reviewed", "tasks": tasks}
-

@@ -1,15 +1,10 @@
+@use "./variables.scss";
+
 /* layout do dashboard */
 .app-layout {
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Arial,
-    sans-serif;
-  color: #111827;
-  background: #f3f4f6;
+  font-family: --font-sans;
+  color: #374151;
+  background: #fafaf9;
   min-height: 100vh;
 }
 
@@ -18,7 +13,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f3ff 0%, #faf5ff 50%, #f3f4f6 100%);
+  background: linear-gradient(135deg, #f2f3ff 0%, #faf5ff 50%, #fafaf9 100%);
   padding: 24px;
 }
 
@@ -30,7 +25,7 @@
   max-width: 400px;
   width: 100%;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e7e5e4;
 }
 
 .auth-card-icon {
@@ -40,13 +35,13 @@
 .auth-card-title {
   font-size: 24px;
   font-weight: 800;
-  color: #111827;
+  color: #374151;
   margin: 0 0 12px;
 }
 
 .auth-card-desc {
   font-size: 14px;
-  color: #6b7280;
+  color: #4B5563;
   line-height: 1.6;
   margin: 0 0 28px;
 }
@@ -61,7 +56,7 @@
   width: 220px;
   min-width: 220px;
   background: #fff;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #e7e5e4;
   display: flex;
   flex-direction: column;
   transition:
@@ -83,7 +78,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 14px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e7e5e4;
 }
 
 .sidebar-logo {
@@ -102,19 +97,19 @@
 .sidebar-logo-text {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: #374151;
   white-space: nowrap;
 }
 
 .sidebar-toggle {
   background: transparent;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e7e5e4;
   border-radius: 4px;
   width: 30px;
   height: 30px;
   padding: 0;
   cursor: pointer;
-  color: #6b7280;
+  color: #4B5563;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -122,8 +117,8 @@
 }
 
 .sidebar-toggle:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: #fafaf9;
+  color: #374151;
 }
 
 .sidebar-user {
@@ -131,14 +126,14 @@
   align-items: center;
   gap: 10px;
   padding: 14px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #fafaf9;
 }
 
 .sidebar-user-avatar {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(135deg, #4169e1, #3557d6);
   color: #fff;
   display: flex;
   align-items: center;
@@ -158,7 +153,7 @@
 .sidebar-user-name {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: #374151;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,7 +161,7 @@
 
 .sidebar-user-records {
   font-size: 11px;
-  color: #9ca3af;
+  color: #1F2937;
   font-weight: 500;
 }
 
@@ -186,7 +181,7 @@
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: #4B5563;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -198,24 +193,24 @@
 }
 
 .sidebar-nav-item:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: #fafaf9;
+  color: #374151;
 }
 
 .sidebar-nav-item.active {
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: #f2f3ff;
+  color: #4169e1;
   font-weight: 600;
 }
 
 .sidebar-nav-item.active svg {
-  stroke: #7c3aed;
+  stroke: #4169e1;
 }
 
 .sidebar-badge {
   margin-left: auto;
-  background: #ede9fe;
-  color: #7c3aed;
+  background: #f2f3ff;
+  color: #4169e1;
   font-size: 11px;
   font-weight: 700;
   padding: 1px 8px;
@@ -226,7 +221,7 @@
 
 .sidebar-footer {
   padding: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e7e5e4;
 }
 
 .sidebar-logout {
@@ -243,7 +238,7 @@
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  background: #f6f8fa;
+  background: f5f5f4;
 }
 
 .recorder-panel {
@@ -283,13 +278,13 @@
   font-size: 24px;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: #24292f;
+  color: #1F2937;
 }
 
 .history-description {
   margin: 8px 0 0;
   max-width: 64ch;
-  color: #57606a;
+  color: #4B5563;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -302,7 +297,7 @@
 
 .stat-card {
   background: #fff;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
   padding: 14px 12px;
   text-align: left;
@@ -315,13 +310,13 @@
 .stat-value {
   font-size: 20px;
   font-weight: 800;
-  color: #111827;
+  color: #374151;
   line-height: 1;
 }
 
 .stat-label {
   font-size: 11px;
-  color: #9ca3af;
+  color: #1F2937;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -338,7 +333,7 @@
   align-items: center;
   gap: 8px;
   background: #fff;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
   padding: 8px 12px;
   box-shadow: 0 1px 0 rgba(27, 31, 36, 0.02);
@@ -350,12 +345,12 @@
   outline: none;
   font-size: 13px;
   font-family: inherit;
-  color: #111827;
+  color: #374151;
   background: transparent;
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: #1F2937;
 }
 
 .filter-tabs {
@@ -368,9 +363,9 @@
 .filter-tab {
   padding: 6px 12px;
   border-radius: 6px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   background: #fff;
-  color: #24292f;
+  color: #1F2937;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -380,14 +375,14 @@
 }
 
 .filter-tab:hover {
-  border-color: #afb8c1;
-  background: #f6f8fa;
+  border-color: #d6d3d1;
+  background: f5f5f4;
 }
 
 .filter-tab.active {
-  background: #f5f3ff;
-  color: #7c3aed;
-  border-color: #7c3aed;
+  background: #f2f3ff;
+  color: #4169e1;
+  border-color: #4169e1;
 }
 
 .history-list {
@@ -402,7 +397,7 @@
   justify-content: space-between;
   gap: 8px;
   background: #fff;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
   padding: 14px 16px;
   cursor: pointer;
@@ -420,8 +415,8 @@
 }
 
 .history-item:hover {
-  border-color: #afb8c1;
-  background: #f6f8fa;
+  border-color: #d6d3d1;
+  background: f5f5f4;
 }
 
 .history-item-left {
@@ -454,8 +449,8 @@
 }
 
 .history-item-icon.status-uploaded {
-  background: #f6f8fa;
-  color: #57606a;
+  background: f5f5f4;
+  color: #4B5563;
 }
 
 .history-item-icon.status-error {
@@ -493,7 +488,7 @@
 .history-item-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: #374151;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -518,8 +513,8 @@
 }
 
 .history-status-badge.status-uploaded {
-  background: #f6f8fa;
-  color: #57606a;
+  background: f5f5f4;
+  color: #4B5563;
 }
 
 .history-status-badge.status-error {
@@ -529,7 +524,7 @@
 
 .history-item-summary {
   font-size: 12px;
-  color: #6b7280;
+  color: #4B5563;
   line-height: 1.4;
   margin: 2px 0 0;
   overflow: hidden;
@@ -557,13 +552,13 @@
 .history-empty h3 {
   font-size: 16px;
   font-weight: 700;
-  color: #6b7280;
+  color: #4B5563;
   margin: 0;
 }
 
 .history-empty p {
   font-size: 13px;
-  color: #9ca3af;
+  color: #1F2937;
   margin: 0;
   max-width: 280px;
   line-height: 1.5;
@@ -580,14 +575,14 @@
 
 .history-loading p {
   font-size: 13px;
-  color: #9ca3af;
+  color: #1F2937;
   margin: 0;
 }
 
 .loading-spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #e5e7eb;
+  border: 3px solid #e7e5e4;
   border-top-color: #8b5cf6;
   border-radius: 50%;
   animation: dashSpin 0.8s linear infinite;
@@ -611,16 +606,16 @@
 
 .history-error p {
   font-size: 14px;
-  color: #6b7280;
+  color: #4B5563;
   margin: 0;
 }
 
 .btn-retry {
   padding: 8px 20px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e7e5e4;
   background: #fff;
-  color: #111827;
+  color: #374151;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -629,8 +624,8 @@
 }
 
 .btn-retry:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: #fafaf9;
+  border-color: #e4e4e7;
 }
 
 .history-item-meta {
@@ -644,7 +639,7 @@
 .history-item-tasks,
 .history-item-repo {
   font-size: 11px;
-  color: #57606a;
+  color: #4B5563;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -666,7 +661,7 @@
 
 .card {
   background: #fff;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
   box-shadow: 0 1px 0 rgba(27, 31, 36, 0.02);
 }
@@ -684,13 +679,13 @@
   font-size: 24px;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: #24292f;
+  color: #1F2937;
 }
 
 .teams-description {
   margin: 8px 0 0;
   max-width: 58ch;
-  color: #57606a;
+  color: #4B5563;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -703,9 +698,9 @@
 }
 
 .alert-error {
-  color: #8250df;
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
+  color: #3557d6;
+  background: f5f5f4;
+  border: 1px solid #e7e5e4;
 }
 
 .pill {
@@ -715,9 +710,9 @@
   min-height: 24px;
   padding: 0 8px;
   border-radius: 999px;
-  border: 1px solid #d0d7de;
-  background: #f6f8fa;
-  color: #57606a;
+  border: 1px solid #e7e5e4;
+  background: f5f5f4;
+  color: #4B5563;
   font-size: 11px;
   font-weight: 600;
 }
@@ -747,7 +742,7 @@
 
 .teams-card-subtitle {
   margin: 4px 0 0;
-  color: #57606a;
+  color: #4B5563;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -766,29 +761,29 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 13px;
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
+  background: f5f5f4;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
-  color: #24292f;
+  color: #1F2937;
   cursor: pointer;
   font: inherit;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 
   &.hover {
-    background: #eef1f4;
-    border-color: #afb8c1;
+    background: #f5f5f4;
+    border-color: #d6d3d1;
   }
 
   &.active {
-    background: #f5f3ff;
-    border-color: #7c3aed;
+    background: #f2f3ff;
+    border-color: #4169e1;
 
     .team-item-name {
-      color: #7c3aed;
+      color: #4169e1;
     }
 
     .team-item-meta {
-      color:#6d28d9
+      color: #3557d6
     }
   }
 }
@@ -803,7 +798,7 @@
 .team-item-name {
   font-size: 14px;
   font-weight: 600;
-  color: #24292f;
+  color: #1F2937;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -811,31 +806,31 @@
 
 .team-item-meta {
   font-size: 11px;
-  color: #57606a;
+  color: #4B5563;
   font-weight: 500;
 }
 
 .teams-empty-text,
 .teams-loading-text {
   margin: 0;
-  color: #57606a;
+  color: #4B5563;
   font-size: 13px;
   line-height: 1.5;
 }
 
 .teams-help {
   margin: 10px 0;
-  color: #57606a;
+  color: #4B5563;
   font-size: 12px;
   line-height: 1.5;
 }
 
 .teams-help code {
   padding: 1px 4px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 4px;
-  background: #f6f8fa;
-  color: #24292f;
+  background: f5f5f4;
+  color: #1F2937;
 }
 
 .teams-form-row {
@@ -847,10 +842,10 @@
   width: 100%;
   min-width: 0;
   padding: 10px 12px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
   background: #fff;
-  color: #24292f;
+  color: #1F2937;
   font: inherit;
   box-sizing: border-box;
 }
@@ -867,10 +862,10 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 14px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
-  background: #f6f8fa;
-  color: #24292f;
+  background: f5f5f4;
+  color: #1F2937;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -880,8 +875,8 @@
 }
 
 .btn-add:hover:not(:disabled) {
-  background: #eef1f4;
-  border-color: #afb8c1;
+  background: #f5f5f4;
+  border-color: #d6d3d1;
 }
 
 .btn-add:disabled {
@@ -917,7 +912,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   border-radius: 6px;
   background: #fff;
 }
@@ -926,7 +921,7 @@
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   flex-shrink: 0;
 }
 
@@ -938,13 +933,13 @@
 .member-name {
   font-size: 14px;
   font-weight: 600;
-  color: #24292f;
+  color: #1F2937;
 }
 
 .member-meta {
   margin-top: 2px;
   font-size: 11px;
-  color: #57606a;
+  color: #4B5563;
 }
 
 .member-actions {
@@ -961,9 +956,9 @@
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  border: 1px solid #d0d7de;
+  border: 1px solid #e7e5e4;
   background: #fff;
-  color: #57606a;
+  color: #4B5563;
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;

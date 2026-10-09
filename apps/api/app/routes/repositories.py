@@ -1,5 +1,6 @@
-from __future__ import annotations
+"""Endpoints for repositories saved to a user's local project context."""
 
+from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, Depends, Header, HTTPException

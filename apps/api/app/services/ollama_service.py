@@ -1,3 +1,10 @@
+"""Client for requesting structured JSON responses from a local Ollama server.
+
+The service is intentionally small: it owns HTTP transport and response
+validation, while prompt construction and business fallbacks remain in the
+summarization service.
+"""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +13,8 @@ from typing import Any, Dict, Optional
 import httpx
 
 class OllamaServiceError(RuntimeError):
+    """Raised when Ollama cannot return a valid structured response."""
+
     pass
 
 
@@ -16,10 +25,27 @@ async def chat_json(
     model: str,
     timeout_s: int = 120,
 ) -> Dict[str, Any]:
-    # chama o ollama e exige json estrito no campo message.content.
-    # estratégia: enviar prompt com instrução para devolver json válido,
-    # parsear o content como json e, se o content vier com texto antes
-    # ou depois, tenta extrair a substring json.
+    """Send a prompt to Ollama and decode the JSON in ``message.content``.
+
+    Ollama is called without streaming because the summarization pipeline
+    needs the complete response before validating its structure. Responses
+    wrapped in explanatory text are accepted when a JSON object can be
+    extracted from the content.
+
+    Args:
+        prompt: User prompt sent to the configured Ollama model.
+        base_url: Ollama server URL, with or without a trailing slash.
+        model: Model name accepted by Ollama.
+        timeout_s: Maximum request duration in seconds.
+
+    Returns:
+        The decoded JSON object returned by the model.
+
+    Raises:
+        OllamaServiceError: If the HTTP response is unsuccessful, omits
+            ``message.content``, or does not contain parseable JSON.
+        httpx.HTTPError: If the HTTP client cannot complete the request.
+    """
 
     url = base_url.rstrip("/") + "/api/chat"
 
@@ -53,7 +79,6 @@ async def chat_json(
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        # tenta extrair o primeiro json provável
         start = content.find("{")
         end = content.rfind("}")
         if start == -1 or end == -1 or end <= start:
@@ -62,4 +87,3 @@ async def chat_json(
             return json.loads(content[start : end + 1])
         except json.JSONDecodeError as e:
             raise OllamaServiceError(f"Ollama content not JSON parseable: {e}; content={content}")
-

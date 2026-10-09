@@ -12,3 +12,7 @@ build/
 # Env
 .env.local
 .env
+
+# Mkdocs
+
+site/

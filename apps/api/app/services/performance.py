@@ -1,3 +1,9 @@
+"""Project performance metrics and burndown calculations.
+
+The module keeps metric calculations separate from route handling so the same
+rules can be used by project and sprint endpoints.
+"""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -49,7 +55,7 @@ def _in_period(day: Optional[date], start: Optional[date], end: Optional[date]) 
 
 def _closed_date(issue: dict) -> Optional[date]:
     # prefere closed_at (transição real); sem ele usa updated_at como histórico parcial
-    day = _parse_day(issue.get("closed_at") or issue.get("completed_at"))
+    day: date | None = _parse_day(issue.get("closed_at") or issue.get("completed_at"))
     if day is not None:
         return day
     if issue.get("state") == "closed":
@@ -60,11 +66,10 @@ def _closed_date(issue: dict) -> Optional[date]:
 def summarize_member_metrics(
     members: Iterable[dict], issues: list[dict]
 ) -> list[dict]:
-    # métricas por pessoa: carga, pontos entregues e última atividade.
-    # usado tanto pela API de desempenho quanto pelo detalhe de equipes.
+    """Aggregate issue counts, points, and activity for each member."""
     by_login: Dict[str, dict] = {}
     for member in members:
-        login = _normalize_login(
+        login: str = _normalize_login(
             member.get("team_github_login") or member.get("github_login")
         )
         if not login:
@@ -83,7 +88,7 @@ def summarize_member_metrics(
         }
 
     def touch(stats: dict, stamp: Any) -> None:
-        day = _parse_day(stamp)
+        day: date | None = _parse_day(stamp)
         if day is None:
             return
         current = stats["last_activity"]
@@ -91,7 +96,7 @@ def summarize_member_metrics(
             stats["last_activity"] = _iso(day)
 
     for issue in issues:
-        assignee = _normalize_login(issue.get("assignee"))
+        assignee: str = _normalize_login(issue.get("assignee"))
         stats = by_login.get(assignee)
         if stats is None:
             continue
@@ -102,7 +107,7 @@ def summarize_member_metrics(
             or issue.get("closed_at")
             or issue.get("created_at"),
         )
-        points = _clamp_points(issue.get("points"))
+        points: int = _clamp_points(issue.get("points"))
         is_pending_draft = (
             issue.get("source") == "draft" and issue.get("github_issue_id") is None
         )
@@ -135,33 +140,43 @@ def compute_project_performance(
     member: str = "",
     sprint_issue_ids: Optional[set[str]] = None,
 ) -> dict:
-    """Métricas de desempenho de um projeto sem inventar eventos passados.
+    """Compute project metrics without inventing historical events.
 
     Os dados que existiam antes desta versão (sem eventos por issue) são
     reportados como "histórico parcial" e as séries temporais são derivadas de
     created_at/closed_at em vez de transições reais.
+
+    Args:
+        project: Project data used to determine sprint and team context.
+        issues: Issues associated with the project.
+        event_count: Number of historical issue events available.
+        member: Optional GitHub login filter.
+        team_member_logins: Optional team filter.
+
+    Returns:
+        A dictionary containing the project performance report.
     """
     if granularity not in ("daily", "weekly"):
         granularity = "daily"
 
-    start = _parse_day(period_start)
-    end = _parse_day(period_end)
-    today = datetime.utcnow().date()
-    member_filter = _normalize_login(member)
+    start: date | None = _parse_day(period_start)
+    end: date | None = _parse_day(period_end)
+    today: date = datetime.utcnow().date()
+    member_filter: str = _normalize_login(member)
 
     filtered: list[dict] = []
     for issue in issues:
         if sprint_issue_ids is not None and issue["id"] not in sprint_issue_ids:
             continue
         if team_member_logins is not None:
-            assignee = _normalize_login(issue.get("assignee"))
+            assignee: str = _normalize_login(issue.get("assignee"))
             if assignee not in team_member_logins:
                 continue
         if member_filter:
             if _normalize_login(issue.get("assignee")) != member_filter:
                 continue
-        created = _parse_day(issue.get("created_at"))
-        closed = _closed_date(issue)
+        created: date | None = _parse_day(issue.get("created_at"))
+        closed: date | None = _closed_date(issue)
         if not _in_period(created, start, end) and not _in_period(closed, start, end):
             continue
         filtered.append(issue)
@@ -169,80 +184,80 @@ def compute_project_performance(
     def count(cond) -> int:
         return sum(1 for issue in filtered if cond(issue))
 
-    open_issues = count(lambda i: i.get("state") == "open" and i.get("source") != "draft")
-    closed_issues = count(lambda i: i.get("state") == "closed")
-    pending_drafts = count(
+    open_issues: int = count(lambda i: i.get("state") == "open" and i.get("source") != "draft")
+    closed_issues: int = count(lambda i: i.get("state") == "closed")
+    pending_drafts: int = count(
         lambda i: i.get("source") == "draft" and i.get("github_issue_id") is None
     )
-    confirmed_drafts = count(
+    confirmed_drafts: int = count(
         lambda i: i.get("source") == "draft" and i.get("github_issue_id") is not None
     )
-    drafts = pending_drafts + confirmed_drafts
+    drafts: int = pending_drafts + confirmed_drafts
 
-    total_points = sum(_clamp_points(i.get("points")) for i in filtered)
-    delivered_points = sum(
+    total_points: int = sum(_clamp_points(i.get("points")) for i in filtered)
+    delivered_points: int = sum(
         _clamp_points(i.get("points"))
         for i in filtered
         if i.get("state") == "closed"
     )
-    remaining_points = max(0, total_points - delivered_points)
+    remaining_points: int = max(0, total_points - delivered_points)
 
     weekly_throughput: Dict[str, int] = Counter()
     for i in filtered:
-        day = _closed_date(i)
+        day: date | None = _closed_date(i)
         if day is None:
             continue
         weekly_throughput[_iso(_bucket_key(day, "weekly"))] += 1
-    period_weeks = max(1, len(weekly_throughput) or 1)
-    throughput_avg = round(sum(weekly_throughput.values()) / period_weeks, 1)
+    period_weeks: int = max(1, len(weekly_throughput) or 1)
+    throughput_avg: float = round(sum(weekly_throughput.values()) / period_weeks, 1)
 
     lead_times: list[int] = []
     for i in filtered:
-        created = _parse_day(i.get("created_at"))
-        closed = _closed_date(i)
+        created: date | None = _parse_day(i.get("created_at"))
+        closed: date | None = _closed_date(i)
         if created is None or closed is None or closed < created:
             continue
         lead_times.append((closed - created).days)
-    lead_time_avg_days = (
+    lead_time_avg_days: float | None = (
         round(sum(lead_times) / len(lead_times), 1) if lead_times else None
     )
 
-    unassigned_open = count(
+    unassigned_open: int = count(
         lambda i: i.get("state") == "open"
         and not _normalize_login(i.get("assignee"))
         and i.get("source") != "draft"
     )
 
-    today_dt = datetime.utcnow()
-    late_issues = count(
+    today_dt: datetime = datetime.utcnow()
+    late_issues: int = count(
         lambda i: i.get("state") == "open"
         and (created := _parse_day(i.get("created_at"))) is not None
         and (today_dt.date() - created).days > 7
     )
 # evolução diária/semanal (baseada em created/closed; ver histórico parcial)
-    all_days = [
+    all_days: list[date] = [
         d for i in filtered if (d := _parse_day(i.get("created_at"))) is not None
     ]
-    range_start = min(all_days) if all_days else today
-    closed_days = [
+    range_start: date = min(all_days) if all_days else today
+    closed_days: list[date] = [
         d for i in filtered if (d := _closed_date(i)) is not None
     ]
-    range_end = max([range_start, *(closed_days or []), today])
+    range_end: date = max([range_start, *(closed_days or []), today])
 
     timeline: list[dict] = []
     running_open = 0
     running_done = 0
     running_total = 0
-    cursor = _bucket_key(range_start, granularity)
-    stop_on = _bucket_key(range_end, granularity)
+    cursor: date = _bucket_key(range_start, granularity)
+    stop_on: date = _bucket_key(range_end, granularity)
     while cursor <= stop_on:
-        label = _iso(cursor)
-        next_cursor = (
+        label: str = _iso(cursor)
+        next_cursor: date = (
             cursor + timedelta(days=7)
             if granularity == "weekly"
             else cursor + timedelta(days=1)
         )
-        bucket_end = next_cursor - timedelta(days=1)
+        bucket_end: date = next_cursor - timedelta(days=1)
 
         created_in = [
             i
@@ -272,7 +287,7 @@ def compute_project_performance(
                 "points_total_cumulative": running_total,
             }
         )
-        cursor = next_cursor
+        cursor: date = next_cursor
 
     # burndown (restante) e burnup (planejado versus realizado) do período
     burndown = build_burndown(
@@ -317,7 +332,7 @@ def compute_project_performance(
     by_member = summarize_member_metrics(members, filtered)
     # pessoas sem issues também aparecem no detalhe
     for member in members:
-        login = _normalize_login(
+        login: str = _normalize_login(
             member.get("team_github_login") or member.get("github_login")
         )
         if login and not any(m["github_login"] == login for m in by_member):
@@ -373,10 +388,10 @@ def compute_project_performance(
     for i in filtered:
         if i.get("state") != "open":
             continue
-        created = _parse_day(i.get("created_at"))
+        created: date | None = _parse_day(i.get("created_at"))
         if created is None:
             continue
-        days_old = (today_dt.date() - created).days
+        days_old: int = (today_dt.date() - created).days
         if days_old > 21:
             stale_issue_ids.append(i["id"])
     if stale_issue_ids:

@@ -1,22 +1,23 @@
 import { useEffect, useRef, useState } from "react"
+import React from "react"
 
-import "../styles/recorder.scss"
-import "../styles/dashboard.scss"
-import "../styles/dashboard-page.scss"
+import "@/styles/recorder.scss"
+import "@/styles/dashboard.scss"
+import "@/styles/dashboard-page.scss"
 
-import Header from "../components/Header"
-import HistoryDashboard from "../components/HistoryDashboard"
+import Header from "@/components/Header"
+import HistoryDashboard from "@/components/HistoryDashboard"
 
-import RecorderControls from "../components/RecorderControls"
+import RecorderControls from "@/components/RecorderControls"
 
-import RecorderStatus from "../components/RecorderStatus"
-import RecorderVisualizer from "../components/RecorderVisualizer"
-import RecordingDetail from "../components/RecordingDetail"
-import Sidebar from "../components/Sidebar"
+import RecorderStatus from "@/components/RecorderStatus"
+import RecorderVisualizer from "@/components/RecorderVisualizer"
+import RecordingDetail from "@/components/RecordingDetail"
+import Sidebar from "@/components/Sidebar"
 import { API_BASE, AUTH_LOGIN_URL, AUTH_SUCCESS_URL_PREFIX, AUTH_TOKEN_KEY } from "../config"
 import { GithubIcon } from "lucide-react";
 
-import TeamsTab from "./teams"
+import TeamsTab from "@/tabs/teams"
 
 type Status = "idle" | "recording" | "recorded" | "uploading" | "success" | "error"
 type AuthState = "unknown" | "authenticated" | "unauthenticated"

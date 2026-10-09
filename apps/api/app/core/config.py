@@ -1,4 +1,7 @@
+"""Environment-backed configuration for the API and external integrations."""
+
 from __future__ import annotations
+
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -6,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
-    # configurações globais da api, lidas de variáveis de ambiente e do .env
+    """Configuration loaded from ``apps/api/.env`` and environment variables."""
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

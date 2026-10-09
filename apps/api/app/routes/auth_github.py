@@ -1,3 +1,5 @@
+"""GitHub OAuth endpoints and authenticated-user lookup."""
+
 from __future__ import annotations
 from urllib.parse import quote, urlsplit
 
@@ -38,7 +40,11 @@ def _is_safe_frontend_url(url: str) -> bool:
     return bool(target.scheme and ui.scheme == target.scheme and ui.netloc == target.netloc)
 
 
-@app_router.get("/login")
+@app_router.get(
+    "/login",
+    summary="Start GitHub OAuth",
+    description="Redirects the browser to GitHub authorization with the configured scopes.",
+)
 async def github_login(next: str | None = None):
     redirect_uri = settings.GITHUB_REDIRECT_URI
     scope = settings.GITHUB_SCOPE
@@ -60,7 +66,11 @@ async def github_login(next: str | None = None):
     return RedirectResponse(url=url)
 
 
-@app_router.get("/callback")
+@app_router.get(
+    "/callback",
+    summary="Complete GitHub OAuth",
+    description="Exchanges the GitHub authorization code for an Anota Aí JWT.",
+)
 async def github_callback(
     request: Request,
     code: str | None = None,
@@ -105,7 +115,12 @@ async def github_success():
     return JSONResponse({"message": "Autenticado com sucesso! Você já pode fechar esta aba."})
 
 
-@app_router.get("/me")
+@app_router.get(
+    "/me",
+    summary="Get the authenticated user",
+    description="Returns the GitHub identity represented by the bearer JWT.",
+    responses={401: {"description": "Missing, invalid, or incomplete JWT"}},
+)
 async def github_me(auth=Depends(require_auth)):
 
     github_access_token = auth.get("github_access_token")
@@ -121,4 +136,3 @@ async def github_me(auth=Depends(require_auth)):
             "name": user.get("name"),
         }
     )
-

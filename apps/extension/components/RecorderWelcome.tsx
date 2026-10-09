@@ -1,3 +1,4 @@
+import React from "react"
 const iconImg = new URL("../assets/icon.png", import.meta.url).toString()
 
 export default function RecorderWelcome() {

@@ -1,5 +1,6 @@
-from __future__ import annotations
+"""Project team, member, and personal-alias endpoints."""
 
+from __future__ import annotations
 import uuid
 from typing import List, Optional
 
@@ -230,4 +231,3 @@ async def delete_user_alias_endpoint(
     if not delete_user_alias(github_login=github_login, alias=alias):
         raise HTTPException(status_code=404, detail="Alias não encontrado")
     return {"ok": True}
-

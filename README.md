@@ -123,9 +123,9 @@ Como iniciar o projeto:
 
     A dashboard fica no `http://localhost:3000` para poder ser acessada e testada.
 
-## 🚧 Estado do projeto
+## Estado do projeto
 
-O projeto está em desenvolvimento (🚧), com previsão para terminar em outubro.
+O escopo funcional da versão experimental está implementado. O projeto inclui captura, transcrição, processamento por IA, revisão de tarefas, integração com GitHub, dashboard, sprints e métricas de desempenho.
 
 ### Implementado (versão v0)
 
@@ -152,8 +152,11 @@ O projeto está em desenvolvimento (🚧), com previsão para terminar em outubr
 * [x] Fluxo de revisão das informações
 * [x] Criação de GitHub Issues
 * [x] Página de Sprints (sprint backlog, Story Points, progresso e burndown)
-* [ ] Dashboard para visualização dos resultados
-* [ ] Escrever o TCC...
+* [x] Dashboard para visualização dos resultados
+* [x] Métricas, burnup e burndown
+* [x] Testes automatizados da API
+* [x] Documentação técnica com MkDocs e mkdocstrings
+* [ ] Avaliação experimental e redação do TCC
 
 > O processamento dos áudios utiliza o Whisper. Enquanto a geração estruturada de resumos e a identificação de decisões usam Groq ou Ollama quando `LLM_SUMMARIZATION_ENABLED=true`.
 
@@ -166,3 +169,32 @@ Algumas funcionalidades poderão ser investigadas posteriormente (depois da apre
 * [ ] Integração com outras plataformas de gerenciamento de projetos (talvez, bem talvez mesmo)
 * [ ] Planning Poker, gestão de cerimônias e Kanban (scrum completo)
 * [ ] Suporte aprimorado a diferentes navegadores (como o safari)
+
+## Testes e documentação
+
+Para executar os testes da API:
+
+```bash
+cd apps/api
+.venv/bin/python -m pytest -q
+```
+
+Para gerar a documentação técnica:
+
+```bash
+cd apps/api
+.venv/bin/python -m pip install -r requirements-dev.txt
+cd ../..
+apps/api/.venv/bin/mkdocs serve
+```
+
+A documentação publicada é configurada em [`mkdocs.yml`](mkdocs.yml) e usa
+`mkdocstrings` para gerar a referência da API diretamente a partir dos módulos
+Python e de suas docstrings no estilo Google.
+
+## Limitações da versão experimental
+
+A versão atual não realiza diarização automática de áudio. A identificação de
+responsáveis depende de nomes, aliases e logins disponíveis no contexto do
+projeto. As métricas podem indicar histórico parcial quando não existem eventos
+registrados para todas as issues.
