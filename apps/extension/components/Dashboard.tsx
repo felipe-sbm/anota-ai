@@ -6,6 +6,7 @@ type Recording = {
   file_id: string
   filename: string
   original_filename: string
+  title?: string | null
   created_at: string
   status: string
   transcript: string | null
@@ -182,8 +183,8 @@ export default function Dashboard({ onViewDetail, onRecordingCount }: Props) {
             </div>
             <div className="dashboard-item-body">
               <div className="dashboard-item-info">
-                <span className="dashboard-filename" title={record.original_filename}>
-                  {record.original_filename || record.filename}
+                <span className="dashboard-filename" title={record.title || record.original_filename}>
+                  {record.title || record.original_filename || record.filename}
                 </span>
                 {record.summary && (
                   <p className="dashboard-summary-preview">

@@ -6,6 +6,7 @@ type Recording = {
   file_id: string
   filename: string
   original_filename: string
+  title?: string | null
   created_at: string
   status: string
   transcript: string | null
@@ -80,10 +81,11 @@ export default function HistoryDashboard({ onViewDetail, onRecordsLoaded }: Prop
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
         const matchesFilename = r.original_filename?.toLowerCase().includes(q)
+        const matchesTitle = r.title?.toLowerCase().includes(q)
         const matchesSummary = r.summary?.toLowerCase().includes(q)
         const matchesTranscript = r.transcript?.toLowerCase().includes(q)
         const matchesRepo = r.repo_full_name?.toLowerCase().includes(q)
-        if (!matchesFilename && !matchesSummary && !matchesTranscript && !matchesRepo) return false
+        if (!matchesFilename && !matchesTitle && !matchesSummary && !matchesTranscript && !matchesRepo) return false
       }
       return true
     })
@@ -236,7 +238,7 @@ export default function HistoryDashboard({ onViewDetail, onRecordsLoaded }: Prop
                     </div>
                     <div className="history-item-content">
                       <div className="history-item-header">
-                        <span className="history-item-title">{record.original_filename || record.filename}</span>
+                        <span className="history-item-title">{record.title || record.original_filename || record.filename}</span>
                         <span className={`history-status-badge ${getStatusClass(record.status)}`}>{getStatusLabel(record.status)}</span>
                       </div>
                       <div className="history-item-meta">

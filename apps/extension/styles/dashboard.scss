@@ -1,5 +1,3 @@
-@use "./variables.scss";
-
 /* layout do dashboard */
 .app-layout {
   font-family: --font-sans;
@@ -13,7 +11,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f2f3ff 0%, #faf5ff 50%, #fafaf9 100%);
+  background: linear-gradient(135deg, #f2f3ff 0%, #cfd3ff 50%, #fafaf9 100%);
   padding: 24px;
 }
 
@@ -529,6 +527,7 @@
   margin: 2px 0 0;
   overflow: hidden;
   display: -webkit-box;
+  line-clamp: 1;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }

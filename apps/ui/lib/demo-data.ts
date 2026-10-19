@@ -446,9 +446,32 @@ const demoRecords: AudioRecord[] = [
 		filename: 'planejamento-produto.wav',
 		created_at: '2026-09-28T14:30:00.000Z',
 		status: 'reviewed',
+		title: 'Alinhamento do lançamento do painel de projetos',
 		summary: 'O time alinhou o lançamento do novo painel de projetos, priorizando visibilidade do progresso e uma experiência mais simples para equipes.',
 		transcript:
 			'MatsuCode: Vamos deixar o resumo do projeto como a primeira leitura.\nEricInacio01: Também precisamos preservar os rascunhos até alguém confirmar a issue.\nGabriel-GH1: Posso cuidar da busca e dos filtros.',
+		decisions: [
+			{
+				title: 'Resumo do projeto como primeira leitura',
+				context: 'O resumo passa a ser o primeiro bloco visível no detalhe do projeto.',
+				status: 'aligned',
+			},
+			{
+				title: 'Rascunhos só viram issue após confirmação',
+				context: 'Falta definir com o time quem pode confirmar os rascunhos.',
+				status: 'needs_discussion',
+			},
+		],
+		details: [
+			{
+				topic: 'Primeira leitura do projeto',
+				notes: 'MatsuCode destacou que o resumo precisa aparecer antes da transcrição, para dar contexto rápido a quem abre o projeto.',
+			},
+			{
+				topic: 'Busca e filtros',
+				notes: 'Gabriel-GH1 se ofereceu para cuidar da busca e dos filtros de gravações por repositório.',
+			},
+		],
 		tasks: [
 			{ title: 'Criar visão semanal do progresso', description: 'Adicionar uma leitura semanal para o time.', assignee: 'MatsuCode' },
 			{ title: 'Documentar fluxo de confirmação', description: 'Explicar quando um rascunho vira issue.', assignee: 'quiradon' },
@@ -472,6 +495,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'retrospectiva-time.mp3',
 		created_at: '2026-09-25T09:15:00.000Z',
 		status: 'pending_review',
+		title: 'Retrospectiva e pontos de atenção',
 		summary: 'A retrospectiva identificou permissões e sincronização como os próximos pontos de atenção.',
 		transcript: 'fernandocg1: A sincronização funcionou bem, mas as permissões ainda geram dúvidas.\nEricInacio01: Vou abrir um rascunho para revisarmos com o time.',
 		tasks: [{ title: 'Revisar permissões do workspace', description: 'Validar o fluxo de permissões.', assignee: 'fernandocg1' }],
@@ -487,6 +511,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'pesquisa-usuarios.m4a',
 		created_at: '2026-09-21T16:45:00.000Z',
 		status: 'reviewed',
+		title: 'Melhorias pedidas na busca de gravações',
 		summary: 'Usuários querem encontrar rapidamente decisões e tarefas extraídas das reuniões.',
 		transcript: 'MatsuCode: A busca por transcrição é a melhoria mais pedida.\nquiradon: Vale destacar as decisões dentro do texto.',
 		tasks: [{ title: 'Melhorar busca de gravações', description: 'A busca precisa considerar transcrição.', assignee: 'MatsuCode' }],
@@ -509,6 +534,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'daily-mobile.wav',
 		created_at: '2026-09-29T11:20:00.000Z',
 		status: 'pending_review',
+		title: 'Prioridades do time mobile',
 		summary: 'O time mobile priorizou o modo offline e discutiu o tema escuro no design system.',
 		transcript: 'thyevidal: O modo offline é o que mais trava a adoção hoje.\noscarkemuel: Se a gravação funcionar sem rede, o resto flui.\nfelipe-sbm: Vou revisar o contraste do tema escuro enquanto isso.',
 		tasks: [
@@ -527,6 +553,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'revisao-infra.mp3',
 		created_at: '2026-09-24T08:05:00.000Z',
 		status: 'reviewed',
+		title: 'Observabilidade do pipeline de áudio',
 		summary: 'Revisão semanal de infraestrutura focou em observabilidade do pipeline de áudio.',
 		transcript: 'EricInacio01: Precisamos saber de falhas antes do cliente reclamar.\nJmspter: Vou montar os alertas por etapa do pipeline.',
 		tasks: [{ title: 'Alertas de falha no processamento', description: 'Notificar o time quando um áudio falhar.', assignee: 'EricInacio01' }],
@@ -549,6 +576,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'onboarding-clientes.m4a',
 		created_at: '2026-09-19T13:40:00.000Z',
 		status: 'reviewed',
+		title: 'Onboarding e registro de decisões',
 		summary: 'Sessão de onboarding mostrou onde as decisões se perdem entre a reunião e o board.',
 		transcript: 'euandrelucas: As pessoas decidem na call e esquecem de registrar.\nfelipe-sbm: Se a decisão ficar destacada, o retrabalho cai.',
 		tasks: [{ title: 'Destacar decisões na transcrição', description: 'Marcar trechos classificados como decisão.', assignee: 'euandrelucas' }],
@@ -571,6 +599,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'kickoff-design-system.wav',
 		created_at: '2026-09-30T09:40:00.000Z',
 		status: 'pending_review',
+		title: 'Kickoff do design system',
 		summary: 'Kickoff do design system definiu nomenclatura de projetos e ajustes de tema escuro.',
 		transcript: 'jagaldino: Os nomes dos projetos estão inconsistentes entre dashboard e relatórios.\nfelipe-sbm: E o tema escuro precisa de uma passada de contraste.',
 		tasks: [
@@ -589,6 +618,7 @@ const demoRecords: AudioRecord[] = [
 		filename: 'incidente-api.mp3',
 		created_at: '2026-09-30T08:15:00.000Z',
 		status: 'reviewed',
+		title: 'Postmortem do incidente de processamento',
 		summary: 'Postmortem do incidente de processamento apontou necessidade de reprocessamento automático e runbook.',
 		transcript: 'Jmspter: A fila travou e ninguém percebeu por duas horas.\nEricInacio01: Precisamos de um runbook e de reprocessamento automático.\nGaroteDePrograma: Também vale revisar o custo do storage.',
 		tasks: [

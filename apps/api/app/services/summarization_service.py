@@ -11,7 +11,8 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, TypedDict
+from collections import Counter
+from typing import Any, Literal, TypedDict
 
 import httpx
 from langgraph.graph import END, START, StateGraph
@@ -34,21 +35,44 @@ class TaskOut(BaseModel):
 
 
 class DecisionOut(BaseModel):
-    """Decision identified in the meeting."""
+    """Decision identified in the meeting, including its current status."""
     title: str
     context: str = ""
+    status: Literal["aligned", "needs_discussion"] = Field(
+        default="aligned",
+        description=(
+            '"aligned" quando houve consenso; '
+            '"needs_discussion" quando ainda depende de conversa.'
+        ),
+    )
+
+
+class DetailOut(BaseModel):
+    """A discussion topic expanded in the meeting notes (section "Detalhes")."""
+    topic: str
+    notes: str = ""
+
+
+class MeetingAnalysis(BaseModel):
+    """Professional, structured reading of a meeting."""
+    title: str = ""
+    overview: str = ""
+    decisions: list[DecisionOut] = Field(default_factory=list)
+    details: list[DetailOut] = Field(default_factory=list)
+
+
+class TasksExtractionOut(BaseModel):
+    """Tasks returned by the extraction step before responsible resolution."""
+    tasks: list[TaskOut] = Field(default_factory=list)
 
 
 class SummaryTasksOut(BaseModel):
     """Complete result of meeting summarization and task extraction."""
-    summary: str
-    tasks: list[TaskOut]
+    title: str = ""
+    summary: str = ""
     decisions: list[DecisionOut] = Field(default_factory=list)
-
-
-class MeetingAnalysis(BaseModel):
-    overview: str
-    decisions: list[DecisionOut] = Field(default_factory=list)
+    details: list[DetailOut] = Field(default_factory=list)
+    tasks: list[TaskOut] = Field(default_factory=list)
 
 
 class MeetingState(TypedDict, total=False):
@@ -59,8 +83,10 @@ class MeetingState(TypedDict, total=False):
     llm_enabled: bool
     prepared_content: str
     analysis: MeetingAnalysis
+    title: str
     summary: str
     decisions: list[DecisionOut]
+    details: list[DetailOut]
     tasks: list[TaskOut]
 
 
@@ -68,13 +94,13 @@ def build_prompt(transcript: str, assignees: list[str]) -> str:
     """Build the strict JSON prompt used for task extraction."""
     # forçamos JSON estrito no output para facilitar o parse do resultado.
     return f"""
-Você é um assistente que transforma o conteúdo de uma gravação em:
-1) um resumo completo e detalhado baseado no conteudo recebido
-2) uma lista de tarefas (issues) para um time de desenvolvimento
+Você recebe a transcrição de uma reunião e extrai as próximas etapas (tarefas)
+para um time de desenvolvimento.
 
 REGRAS:
 - Gere tasks SE houver ações, decisões, dúvidas ou itens de trabalho.
-- Cada task deve ter title claro e body contendo contexto.
+- Cada task deve ter um "title" curto e claro (no imperativo, ex: "Criar tela de login")
+  e um "body" com o contexto necessário para executá-la.
 - No campo body, inclua SEMPRE uma seção final chamada "Anexos/Referências:".
   - Se não houver anexos, deixe "Anexos/Referências:" vazio (apenas a seção).
   - Não invente anexos; use apenas informações que existam no texto.
@@ -86,7 +112,6 @@ REGRAS:
 
 OUTPUT EXCLUSIVAMENTE em JSON válido no formato:
 {{
-  \"summary\": string,
   \"tasks\": [
     {{
       \"title\": string,
@@ -104,18 +129,42 @@ TRANSCRIÇÃO:
 {transcript}
 """.strip()
 
-# depois vou colocar um prompt melhor, esse é só um teste.
-def build_analysis_prompt(content: str) -> str:
-    return f"""
-você analisa transcrições de reuniões. Por favor, identifique somente informações presentes no texto.
 
-Responda exclusivamente em JSON válido neste formato:
+def build_analysis_prompt(content: str) -> str:
+    """Build the prompt that produces professional, structured meeting notes."""
+    # o objetivo é gerar anotações no estilo de um resumo executivo: um título
+    # curto, um panorama, as decisões (com status) e os detalhes por tópico.
+    return f"""
+Você é um analista sênior que transforma a transcrição de uma reunião em
+anotações profissionais, no estilo de um resumo executivo.
+
+Analise SOMENTE o que está na transcrição e responda, exclusivamente, com um
+objeto JSON válido neste formato:
 {{
+  "title": string,
   "overview": string,
   "decisions": [
-    {{"title": string, "context": string}}
+    {{"title": string, "context": string, "status": "aligned" | "needs_discussion"}}
+  ],
+  "details": [
+    {{"topic": string, "notes": string}}
   ]
 }}
+
+REGRAS:
+- "title": frase curta (3 a 8 palavras), sem ponto final, que resuma a reunião
+  inteira (ex: "Alinhamento de ideias para continuidade do MVP").
+- "overview": resumo executivo em 1 a 2 parágrafos, cobrindo o essencial do que
+  foi discutido, com começo, meio e fim. Deve fazer sentido sozinho.
+- "decisions": liste apenas decisões, consensos e itens que ficaram em aberto.
+  - Use "aligned" quando houve consenso ou fechamento.
+  - Use "needs_discussion" quando ainda depende de uma conversa futura.
+  - Deixe "decisions" como [] se não houver nenhuma.
+- "details": agrupe a discussão por assunto; cada item traz um "topic" curto e
+  "notes" com o detalhamento do que foi dito sobre ele (o equivalente à seção
+  "Detalhes" das anotações). Quanto mais completo, melhor.
+- NÃO invente nomes, prazos, números ou fatos que não estejam no texto.
+- Escreva em português do Brasil, com tom profissional, objetivo e claro.
 
 TRANSCRIÇÃO:
 {content}
@@ -201,7 +250,277 @@ async def _request_json(state: MeetingState, prompt: str) -> dict[str, Any] | No
 
 
 def _sentences(content: str) -> list[str]:
-    return [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", content) if sentence.strip()]
+    # quebra em frases por pontuação final ou por quebra de linha (transcrições
+    # costumam vir sem pontuação, mas com um segmento por linha).
+    parts = re.split(r"(?<=[.!?])\s+|\n+", content)
+    return [part.strip() for part in parts if part.strip()]
+
+
+def _strip_speaker(sentence: str) -> str:
+    """Remove a leading speaker prefix such as ``Felipe Samuel:`` when present."""
+    head, sep, tail = sentence.partition(":")
+    if sep and tail.strip() and len(head) <= 40:
+        return tail.strip()
+    return sentence.strip()
+
+
+# palavras funcionais ignoradas na extração de tópicos (fallback determinístico)
+_STOPWORDS = {
+    "para", "como", "porque", "sobre", "entre", "depois", "antes", "também",
+    "tambem", "ainda", "sempre", "nunca", "muito", "pouco", "então", "entao",
+    "assim", "onde", "quando", "qual", "quais", "esse", "essa", "isso", "este",
+    "esta", "isto", "aquele", "aquela", "estou", "estamos", "estava", "vamos",
+    "acho", "beleza", "tipo", "coisa", "coisas", "gente", "pessoal", "aqui",
+    "ali", "lá", "la", "meu", "minha", "seu", "sua", "nosso", "nossa", "eles",
+    "elas", "você", "voce", "vocês", "voces", "todos", "todas", "fazer", "feito",
+    "vai", "vou", "vão", "vao", "ser", "sendo", "tem", "têm", "tinha", "ter",
+    "está", "estao", "estão", "era", "eram", "mas", "que", "com", "uma", "dos",
+    "das", "por", "pra", "pro", "não", "nao", "sim", "bem", "mais", "menos",
+    "cada", "outro", "outra", "pode", "podem", "podemos", "deve", "devem",
+    "dever", "falar", "falei", "partir", "até", "ate", "desde", "sem", "nem",
+    "ou", "ele", "ela", "nas", "nos", "num", "numa", "tava", "ficar", "ficou",
+    "precisa", "preciso", "precisamos", "sugiro", "sugerir", "sugestão",
+    "sugestao", "arcar", "manter", "gerar", "usar", "usamos", "utilizar",
+    "definimos", "definido", "definir", "estabelecido", "estabelecer",
+    "acordado", "acordada", "acordamos", "decidido", "decidimos", "combinamos",
+    "escolhemos", "optamos", "adotar", "adotamos", "devemos", "começa",
+    "comecar", "começar", "inicia", "iniciar", "ajudar", "adianta", "adiantar",
+    "agiliza", "agilizar", "funciona", "funcionar", "gera", "criar", "cria",
+    "implementar", "resolver", "alinhar", "revisar", "verificar", "primeiro",
+    "depois", "ainda", "será", "sera", "ente", "né", "ne", "tá", "ta", "já",
+    "ja", "tipo", "parte", "entrar", "colocar", "deixar", "olha", "mano",
+}
+
+# pistas textuais usadas para separar decisões fechadas de itens em aberto
+_DECISION_ALIGNED = (
+    "ficou acordado", "ficou decidido", "ficou definido", "decidimos",
+    "acordamos", "combinamos", "definimos", "escolhemos", "optamos",
+    "vamos usar", "vai ser", "será", "sera", "adotar", "adoção", "adocao",
+)
+_DECISION_OPEN = (
+    "precisa de mais conversa", "em aberto", "a definir", "falta definir",
+    "pendente", "depende", "fica para depois", "próxima reunião",
+    "proxima reuniao", "discutir depois", "ainda precisa",
+)
+
+
+def _looks_like_verb(word: str) -> bool:
+    """Cheap heuristic to drop common verb forms from topic keywords."""
+    if len(word) < 4:
+        return False
+    return word.endswith(("ar", "er", "ir", "ou", "am"))
+
+
+def _content_words(text: str) -> list[str]:
+    """Return the meaningful lowercase words of a sentence."""
+    words: list[str] = []
+    for token in re.findall(r"[0-9A-Za-zÀ-ÿ]+", text):
+        lowered = token.lower()
+        if lowered in _STOPWORDS or lowered.isdigit() or _looks_like_verb(lowered):
+            continue
+        if len(lowered) >= 4 or (token.isupper() and len(lowered) >= 3):
+            words.append(lowered)
+    return words
+
+
+def _keyword_forms(sentences: list[str]) -> tuple[Counter, dict[str, str]]:
+    """Count keywords and keep their original casing for display."""
+    freq: Counter = Counter()
+    forms: dict[str, str] = {}
+    for sentence in sentences:
+        for token in re.findall(r"[0-9A-Za-zÀ-ÿ]+", sentence):
+            lowered = token.lower()
+            if lowered in _STOPWORDS or lowered.isdigit() or _looks_like_verb(lowered):
+                continue
+            if len(lowered) < 4 and not (token.isupper() and len(lowered) >= 3):
+                continue
+            freq[lowered] += 1
+            forms.setdefault(lowered, token)
+    return freq, forms
+
+
+def _rank_sentences(sentences: list[str]) -> list[int]:
+    """Rank sentence indexes by salience (keyword frequency, length-normalised)."""
+    freq, _ = _keyword_forms(sentences)
+    if not freq:
+        return list(range(len(sentences)))
+    top = max(freq.values())
+    scored: list[tuple[float, int]] = []
+    for index, sentence in enumerate(sentences):
+        words = _content_words(sentence)
+        if not words:
+            continue
+        score = sum(freq[word] / top for word in words) / (len(words) ** 0.5)
+        scored.append((score, index))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [index for _, index in scored]
+
+
+_LEAD_FILLERS = (
+    "a gente", "gente", "eu", "nós", "nos", "então", "entao", "aí", "ai",
+    "olha", "bom", "vamos", "acho que", "eu acho", "tipo", "beleza",
+    "definimos que", "decidimos que", "combinamos que", "acordamos que",
+    "ficou acordado", "ficou decidido", "ficou definido", "ficou estabelecido",
+    "precisamos", "precisa", "temos que", "temos", "que", "é", "eh",
+    "de", "do", "da", "dos", "das", "o", "a", "os", "as", "um", "uma",
+    "uns", "umas", "em", "no", "na", "para", "pra", "pro", "com", "por",
+)
+
+
+def _trim_leading_fillers(text: str) -> str:
+    """Drop conversational prefixes so phrases start on the actual content."""
+    current = text.strip()
+    changed = True
+    while changed and current:
+        changed = False
+        lowered = current.lower()
+        for filler in _LEAD_FILLERS:
+            if lowered.startswith(filler + " "):
+                current = current[len(filler):].strip()
+                changed = True
+                break
+    return current
+
+
+# palavras que não devem terminar um título/frase
+_TRAIL_FILLERS = {
+    "de", "do", "da", "dos", "das", "o", "a", "os", "as", "um", "uma", "uns",
+    "umas", "em", "no", "na", "nos", "nas", "para", "pra", "pro", "com", "por",
+    "que", "e", "ou", "como", "sobre", "entre", "ao", "aos", "se", "à",
+}
+
+
+def _short_phrase(sentence: str, limit: int = 9) -> str:
+    """Turn a sentence into a short, capitalised phrase."""
+    cleaned = re.sub(r"[^\wÀ-ÿ\s]", "", _strip_speaker(sentence))
+    cleaned = _trim_leading_fillers(cleaned)
+    words = cleaned.split()[:limit]
+    while words and words[-1].lower() in _TRAIL_FILLERS:
+        words.pop()
+    phrase = " ".join(words)[:80].strip()
+    return (phrase[:1].upper() + phrase[1:]) if phrase else ""
+
+
+def _fallback_title(sentences: list[str]) -> str:
+    """Build a short title from the meeting's most frequent keywords."""
+    freq, forms = _keyword_forms(sentences)
+    keywords = [forms[word] for word, _ in freq.most_common(4)]
+    if len(keywords) >= 2:
+        head = ", ".join(keywords[:2])
+        if len(keywords) >= 3:
+            head += " e " + keywords[2]
+        return head[:80]
+    for sentence in sentences:
+        phrase = _short_phrase(sentence, 8)
+        if len(phrase.split()) >= 3:
+            return phrase
+    return "Reunião"
+
+
+def _fallback_overview(sentences: list[str], limit: int = 4) -> str:
+    """Compose an overview from the most salient sentences, in original order."""
+    ranked = _rank_sentences(sentences)[:limit]
+    if not ranked:
+        return " ".join(sentences[:3]).strip()
+    return " ".join(sentences[index] for index in sorted(ranked)).strip()
+
+
+def _fallback_decisions(sentences: list[str], limit: int = 5) -> list[DecisionOut]:
+    """Detect closed and open decisions from textual cues."""
+    decisions: list[DecisionOut] = []
+    seen: set[str] = set()
+    for sentence in sentences:
+        lowered = sentence.lower()
+        matched = next((cue for cue in _DECISION_OPEN if cue in lowered), None)
+        if matched:
+            status: Literal["aligned", "needs_discussion"] = "needs_discussion"
+        else:
+            matched = next((cue for cue in _DECISION_ALIGNED if cue in lowered), None)
+            status = "aligned"
+        if not matched:
+            continue
+
+        # a decisão começa na pista ("ficou acordado", "vamos usar"...), então o
+        # título parte desse trecho para não herdar a introdução da frase.
+        start = lowered.find(matched)
+        snippet = sentence[start:].strip() if start >= 0 else sentence
+        title = _short_phrase(snippet)
+        if not title or title.lower() in seen:
+            continue
+        seen.add(title.lower())
+        decisions.append(DecisionOut(title=title, context=sentence.strip(), status=status))
+        if len(decisions) >= limit:
+            break
+    return decisions
+
+
+def _similarity(left: set[str], right: set[str]) -> float:
+    """Jaccard similarity between two keyword sets."""
+    if not left or not right:
+        return 0.0
+    return len(left & right) / len(left | right)
+
+
+def _fallback_details(sentences: list[str], limit: int = 5) -> list[DetailOut]:
+    """Cluster the discussion into topics and summarise each one."""
+    clusters: list[dict[str, Any]] = []
+    for sentence in sentences:
+        words = set(_content_words(sentence))
+        if len(words) < 2:
+            continue
+        best: dict[str, Any] | None = None
+        best_score = 0.0
+        for cluster in clusters:
+            score = _similarity(words, cluster["words"])
+            if score > best_score:
+                best, best_score = cluster, score
+        if best is not None and best_score >= 0.2:
+            best["sentences"].append(sentence)
+            best["words"] |= words
+        else:
+            clusters.append({"words": set(words), "sentences": [sentence]})
+
+    details: list[DetailOut] = []
+    for cluster in clusters:
+        cluster_sentences: list[str] = cluster["sentences"]
+        if not cluster_sentences:
+            continue
+        freq, forms = _keyword_forms(cluster_sentences)
+        topic = ", ".join(forms[word] for word, _ in freq.most_common(3)) or "Tópicos discutidos"
+        ranked = _rank_sentences(cluster_sentences)[:3]
+        notes = " ".join(cluster_sentences[index] for index in sorted(ranked))
+        details.append(DetailOut(topic=topic[:80], notes=notes))
+
+    details.sort(key=lambda item: len(item.notes), reverse=True)
+    return details[:limit]
+
+
+def _fallback_analysis(content: str) -> MeetingAnalysis:
+    """Extractive meeting reading used when the LLM is unavailable.
+
+    It cleans speaker prefixes and duplicated lines, ranks sentences by keyword
+    salience, and derives a title, an overview, decisions, and topics — so the
+    recording still yields a readable, professional-looking summary offline.
+    """
+    seen: set[str] = set()
+    sentences: list[str] = []
+    for raw in _sentences(content):
+        clean = _strip_speaker(raw)
+        key = clean.lower().strip()
+        if not clean or key in seen:
+            continue
+        seen.add(key)
+        sentences.append(clean)
+
+    if not sentences:
+        return MeetingAnalysis()
+
+    return MeetingAnalysis(
+        title=_fallback_title(sentences),
+        overview=_fallback_overview(sentences),
+        decisions=_fallback_decisions(sentences),
+        details=_fallback_details(sentences),
+    )
 
 
 def _suggest_priority(content: str) -> str:
@@ -246,14 +565,16 @@ def _fallback_tasks(content: str, assignees: list[str]) -> list[TaskOut]:
     keywords = ["fazer", "implementar", "criar", "refator", "definir", "alinhar", "resolver", "precisa", "vamos"]
     tasks: list[TaskOut] = []
     for sentence in _sentences(content)[:30]:
-        if any(keyword in sentence.lower() for keyword in keywords):
-            priority = _suggest_priority(sentence)
+        clean = _strip_speaker(sentence)
+        if any(keyword in clean.lower() for keyword in keywords):
+            priority = _suggest_priority(clean)
+            title = _short_phrase(clean, 8) or f"Tarefa #{len(tasks) + 1}"
             tasks.append(
                 TaskOut(
-                    title=f"Tarefa #{len(tasks) + 1}",
-                    body=f"Ação:\n{sentence}\n\nAnexos/Referências:",
+                    title=title,
+                    body=f"Ação:\n{clean}\n\nAnexos/Referências:",
                     assignees=list(assignees),
-                    points=_suggest_points(sentence, priority),
+                    points=_suggest_points(clean, priority),
                     priority=priority,
                 )
             )
@@ -272,9 +593,11 @@ def _fallback_tasks(content: str, assignees: list[str]) -> list[TaskOut]:
 
 
 async def _prepare_content(state: MeetingState) -> dict[str, Any]:
-    # normaliza o texto antes de enviar para as etapas do grafo
+    # normaliza espaços sem destruir as quebras de linha da transcrição
     transcript = state.get("transcript", "")
-    return {"prepared_content": re.sub(r"\s+", " ", transcript).strip()}
+    normalized = re.sub(r"[ \t]+", " ", transcript)
+    normalized = re.sub(r"\n{2,}", "\n", normalized)
+    return {"prepared_content": normalized.strip()}
 
 
 async def _analyze_meeting(state: MeetingState) -> dict[str, Any]:
@@ -287,22 +610,25 @@ async def _analyze_meeting(state: MeetingState) -> dict[str, Any]:
         except Exception:
             logger.exception("resposta de análise inválida")
 
-    return {
-        "analysis": MeetingAnalysis(
-            overview=" ".join(_sentences(content)[:3]),
-            decisions=[],
-        )
-    }
+    return {"analysis": _fallback_analysis(content)}
 
 
 async def _generate_summary(state: MeetingState) -> dict[str, Any]:
     analysis = state.get("analysis")
-    return {"summary": analysis.overview if analysis else ""}
+    return {
+        "title": analysis.title if analysis else "",
+        "summary": analysis.overview if analysis else "",
+    }
 
 
 async def _extract_decisions(state: MeetingState) -> dict[str, Any]:
     analysis = state.get("analysis")
     return {"decisions": analysis.decisions if analysis else []}
+
+
+async def _extract_details(state: MeetingState) -> dict[str, Any]:
+    analysis = state.get("analysis")
+    return {"details": analysis.details if analysis else []}
 
 
 async def _extract_tasks(state: MeetingState) -> dict[str, Any]:
@@ -312,7 +638,7 @@ async def _extract_tasks(state: MeetingState) -> dict[str, Any]:
 
     if payload is not None:
         try:
-            return {"tasks": SummaryTasksOut(**payload).tasks}
+            return {"tasks": TasksExtractionOut(**payload).tasks}
         except Exception:
             logger.exception("resposta de tarefas inválida")
     return {"tasks": _fallback_tasks(content, assignees)}
@@ -339,16 +665,19 @@ def _build_meeting_graph():
     workflow.add_node("analyze_meeting", _analyze_meeting)
     workflow.add_node("generate_summary", _generate_summary)
     workflow.add_node("extract_decisions", _extract_decisions)
+    workflow.add_node("extract_details", _extract_details)
     workflow.add_node("extract_tasks", _extract_tasks)
     workflow.add_node("assign_responsibles", _assign_responsibles)
     workflow.add_edge(START, "prepare_content")
     workflow.add_edge("prepare_content", "analyze_meeting")
     workflow.add_edge("analyze_meeting", "generate_summary")
     workflow.add_edge("analyze_meeting", "extract_decisions")
+    workflow.add_edge("analyze_meeting", "extract_details")
     workflow.add_edge("analyze_meeting", "extract_tasks")
     workflow.add_edge("extract_tasks", "assign_responsibles")
     workflow.add_edge("generate_summary", END)
     workflow.add_edge("extract_decisions", END)
+    workflow.add_edge("extract_details", END)
     workflow.add_edge("assign_responsibles", END)
     return workflow.compile()
 
@@ -360,14 +689,14 @@ async def summarize_and_extract(
     transcript: str, assignees: list[str],
     *, ollama_base_url: str = "", ollama_model: str = "",
     llm_enabled: bool = False) -> SummaryTasksOut:
-    """Run the analysis graph and return summary, decisions, and tasks.
+    """Run the analysis graph and return the title, summary, notes, and tasks.
 
     The function never publishes GitHub issues. Persistence and publication
     are explicit responsibilities of the route layer after user review.
     """
 
     if not transcript.strip():
-        return SummaryTasksOut(summary="", tasks=[], decisions=[])
+        return SummaryTasksOut()
 
     result = await meeting_graph.ainvoke(
         {
@@ -379,7 +708,9 @@ async def summarize_and_extract(
         }
     )
     return SummaryTasksOut(
+        title=result.get("title", ""),
         summary=result.get("summary", ""),
-        tasks=result.get("tasks", []),
         decisions=result.get("decisions", []),
+        details=result.get("details", []),
+        tasks=result.get("tasks", []),
     )

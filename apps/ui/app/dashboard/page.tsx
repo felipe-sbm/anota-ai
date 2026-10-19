@@ -153,7 +153,9 @@ export default function DashboardPage() {
 									className="flex w-full flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between transition hover:border-stone-300 hover:bg-stone-50 cursor-pointer"
 								>
 									<div className="min-w-0">
-										<p className="truncate text-sm font-medium text-stone-900">{record.summary ? <>{record.summary.slice(0, 60)}...</> : null}</p>
+										<p className="truncate text-sm font-medium text-stone-900">
+											{record.title?.trim() ? record.title : record.summary ? `${record.summary.slice(0, 60)}...` : null}
+										</p>
 										<div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
 											<Clock3 className="h-3.5 w-3.5" />
 											<p className="mt-0.5 text-xs font-mono tracking-tighter text-stone-500">{formatDate(record.created_at)}</p>

@@ -32,14 +32,23 @@ class DecisionSpec(BaseModel):
     """Decision extracted from a meeting transcript."""
     title: str
     context: str = ""
+    status: Literal["aligned", "needs_discussion"] = "aligned"
+
+
+class DetailSpec(BaseModel):
+    """Discussion topic expanded in the meeting notes."""
+    topic: str
+    notes: str = ""
 
 
 class ProcessAudioResponse(BaseModel):
     """Structured result returned after audio analysis."""
     transcript: str
+    title: str = ""
     summary: str
     tasks: List[TaskSpec]
     decisions: List[DecisionSpec] = Field(default_factory=list)
+    details: List[DetailSpec] = Field(default_factory=list)
     created_issues: List[Dict[str, Any]] = Field(default_factory=list)
 
 

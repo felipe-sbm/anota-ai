@@ -44,10 +44,12 @@ export type AudioRecord = {
 	filename: string;
 	created_at: string;
 	status: string;
+	title?: string | null;
 	summary?: string | null;
 	transcript?: string | null;
 	tasks?: Array<Record<string, unknown>> | null;
 	decisions?: Array<Record<string, unknown>> | null;
+	details?: Array<Record<string, unknown>> | null;
 	created_issues?: Array<Record<string, unknown>> | null;
 	repo_full_name?: string | null;
 	project_id?: string | null;

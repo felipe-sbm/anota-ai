@@ -88,10 +88,11 @@ export default function RecordingsPage() {
 									</div>
 
 									<div className="min-w-0 truncate">
-										<p className="truncate text-base font-medium text-stone-900">{record.original_filename || record.filename}</p>
+										<p className="truncate text-base font-medium text-stone-900">{record.title?.trim() || record.original_filename || record.filename}</p>
 										<p className="mt-1 flex items-center gap-1.5 text-xs text-stone-500">
 											<CalendarDays className="h-3.5 w-3.5" />
 											<span>{formatDate(record.created_at)}</span>
+											{record.title?.trim() ? <span className="truncate">· {record.original_filename || record.filename}</span> : null}
 										</p>
 									</div>
 								</div>

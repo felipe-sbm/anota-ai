@@ -82,9 +82,11 @@ def init_db():
             user_github_login TEXT NOT NULL DEFAULT '',
             status          TEXT NOT NULL DEFAULT 'uploaded',
             transcript      TEXT,
+            title           TEXT,
             summary         TEXT,
             tasks           TEXT,
             decisions       TEXT,
+            details         TEXT,
             created_issues  TEXT,
             repo_full_name  TEXT DEFAULT '',
             error_message   TEXT
@@ -98,6 +100,10 @@ def init_db():
         conn.execute("ALTER TABLE audio_records ADD COLUMN decisions TEXT")
     if "project_id" not in columns:
         conn.execute("ALTER TABLE audio_records ADD COLUMN project_id TEXT")
+    if "title" not in columns:
+        conn.execute("ALTER TABLE audio_records ADD COLUMN title TEXT")
+    if "details" not in columns:
+        conn.execute("ALTER TABLE audio_records ADD COLUMN details TEXT")
 
     conn.execute(
         """
@@ -343,9 +349,11 @@ def update_record_status(record_id: str, status: str, **kwargs):
     conn = _get_conn()
     allowed = {
         "transcript",
+        "title",
         "summary",
         "tasks",
         "decisions",
+        "details",
         "created_issues",
         "error_message",
         "status",
@@ -413,7 +421,7 @@ def count_records(user_github_login: str) -> int:
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
-    for field in ("tasks", "decisions", "created_issues"):
+    for field in ("tasks", "decisions", "details", "created_issues"):
         if isinstance(d.get(field), str):
             try:
                 d[field] = json.loads(d[field])

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from app.services.summarization_service import SummaryTasksOut
 
-from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec, DecisionSpec
+from ..models.schemas import ProcessAudioResponse, ProcessAudioRequest, TaskSpec, DecisionSpec, DetailSpec
 from ..models.database import (
     create_draft_issues_from_tasks,
     delete_pending_drafts,
@@ -121,10 +121,12 @@ async def process_audio(
         update_record_status(
             req.file_id,
             "pending_review",
+            title=summarized.title,
             transcript=transcript,
             summary=summarized.summary,
             tasks=[t.model_dump() for t in summarized.tasks],
             decisions=[decision.model_dump() for decision in summarized.decisions],
+            details=[detail.model_dump() for detail in summarized.details],
             created_issues=created_issues,
             repo_full_name=req.repo_full_name or "",
             project_id=req.project_id,
@@ -148,8 +150,10 @@ async def process_audio(
 
     return ProcessAudioResponse(
         transcript=transcript,
+        title=summarized.title,
         summary=summarized.summary,
         tasks=[TaskSpec(**t.model_dump()) for t in summarized.tasks],
         decisions=[DecisionSpec(**decision.model_dump()) for decision in summarized.decisions],
+        details=[DetailSpec(**detail.model_dump()) for detail in summarized.details],
         created_issues=created_issues,
     )

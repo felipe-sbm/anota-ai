@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import React from "react"
 
+import "@/styles/tailwind.generated.css"
 import "@/styles/recorder.scss"
 import "@/styles/dashboard.scss"
 import "@/styles/dashboard-page.scss"
@@ -28,6 +29,7 @@ type Recording = {
   file_id: string
   filename: string
   original_filename: string
+  title?: string | null
   created_at: string
   status: string
   transcript: string | null
@@ -371,7 +373,6 @@ export default function DashboardPage() {
             <div className="auth-card-icon">
               <img src={Logo} alt="Anota AI" className="auth-logo" />
             </div>
-            <h1 className="auth-card-title">Anota aí</h1>
             <p className="auth-card-desc">
               Faça login com GitHub para gravar áudios, transcrever e criar tasks automaticamente nos seus repositórios.
             </p>

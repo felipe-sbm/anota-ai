@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { CalendarDays, ExternalLink, FileText, FolderKanban, GitBranch, MessageSquareText, Search, UsersRound } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ExternalLink, FileText, FolderKanban, Gavel, GitBranch, Info, ListChecks, MessageSquareText, Search, UsersRound } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth';
 import { attachRecordToProject, fetchAudioRecord, fetchProjects, type AudioRecord, type Project } from '@/lib/api';
@@ -48,6 +48,75 @@ function extractIssuePeople(issue: Record<string, unknown> | null | undefined) {
 	return Array.from(new Set(values)).filter(Boolean);
 }
 
+type DecisionItem = {
+	title: string;
+	context: string;
+	status: 'aligned' | 'needs_discussion';
+};
+
+type NextStepItem = {
+	title: string;
+	body: string;
+	people: string[];
+};
+
+type DetailItem = {
+	topic: string;
+	notes: string;
+};
+
+function parseDecisions(value: AudioRecord['decisions']): DecisionItem[] {
+	if (!Array.isArray(value)) return [];
+
+	return value.reduce<DecisionItem[]>((items, raw) => {
+		const entry = (raw ?? {}) as Record<string, unknown>;
+		const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+		if (!title) return items;
+
+		items.push({
+			title,
+			context: typeof entry.context === 'string' ? entry.context : '',
+			status: entry.status === 'needs_discussion' ? 'needs_discussion' : 'aligned',
+		});
+		return items;
+	}, []);
+}
+
+function parseSteps(value: AudioRecord['tasks']): NextStepItem[] {
+	if (!Array.isArray(value)) return [];
+
+	return value.reduce<NextStepItem[]>((items, raw) => {
+		const entry = (raw ?? {}) as Record<string, unknown>;
+		const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+		if (!title) return items;
+
+		const body = typeof entry.body === 'string' ? entry.body : '';
+
+		items.push({
+			title,
+			// a seção "Anexos/Referências" é exigida no corpo da issue, mas não
+			// faz sentido na leitura das próximas etapas.
+			body: body.replace(/\s*\n*an[eé]xos\/refer[eê]ncias:\s*$/i, '').trim(),
+			people: extractIssuePeople(entry),
+		});
+		return items;
+	}, []);
+}
+
+function parseDetails(value: AudioRecord['details']): DetailItem[] {
+	if (!Array.isArray(value)) return [];
+
+	return value.reduce<DetailItem[]>((items, raw) => {
+		const entry = (raw ?? {}) as Record<string, unknown>;
+		const topic = typeof entry.topic === 'string' ? entry.topic.trim() : '';
+		const notes = typeof entry.notes === 'string' ? entry.notes : '';
+		if (!topic && !notes) return items;
+
+		items.push({ topic: topic || 'Tópico', notes });
+		return items;
+	}, []);
+}
+
 type IssueGroup = {
 	key: string;
 	title: string;
@@ -61,10 +130,39 @@ type RecordDetailProps = {
 	/** id da gravação; quando omitido, é lido do último segmento da URL. */
 	recordId?: string;
 };
+
+type SectionCardProps = {
+	icon: typeof FileText;
+	title: string;
+	children: React.ReactNode;
+	tone?: 'br' | 'tr' | 'bl' | 'tl';
+};
+
+function SectionCard({ icon: Icon, title, children, tone = 'br' }: SectionCardProps) {
+	const gradient = {
+		br: 'bg-gradient-to-br from-white to-stone-100',
+		tr: 'bg-gradient-to-tr from-white to-stone-100',
+		bl: 'bg-gradient-to-bl from-white to-stone-100',
+		tl: 'bg-gradient-to-tl from-white to-stone-100',
+	}[tone];
+
+	return (
+		<section className={`rounded-3xl border border-stone-200 ${gradient} p-5`}>
+			<div className="mb-3 flex gap-2 items-center">
+				<div className="flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
+					<Icon className="h-4 w-4" />
+				</div>
+				<p className="text-sm font-medium">{title}</p>
+			</div>
+			{children}
+		</section>
+	);
+}
+
 /**
- * Página de detalhe de uma gravação: exibe transcrição, resumo, tarefas
- * extraídas, decisões e o vínculo (ou não) com repositório/issue, permitindo
- * associar a gravação a um projeto.
+ * Página de detalhe de uma gravação: exibe o título gerado pela IA, o resumo
+ * executivo, as decisões (agrupadas por status), as próximas etapas, os
+ * detalhes por tópico e a transcrição, além do vínculo com repositório/issue.
  *
  * @param recordIdProp - ID da gravação; quando omitido, é lido do último
  *   segmento da URL.
@@ -137,6 +235,13 @@ export function RecordDetail({ recordId: recordIdProp }: RecordDetailProps) {
 			: [];
 	}, [record]);
 
+	const decisions = useMemo(() => parseDecisions(record?.decisions), [record]);
+	const nextSteps = useMemo(() => parseSteps(record?.tasks), [record]);
+	const details = useMemo(() => parseDetails(record?.details), [record]);
+
+	const pendingDecisions = decisions.filter((decision) => decision.status === 'needs_discussion');
+	const alignedDecisions = decisions.filter((decision) => decision.status === 'aligned');
+
 	if (loading || !token) {
 		return (
 			<div className="flex min-h-screen items-center justify-center bg-white">
@@ -157,10 +262,17 @@ export function RecordDetail({ recordId: recordIdProp }: RecordDetailProps) {
 		);
 	}
 
+	const heading = record.title?.trim() || record.original_filename || record.filename;
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-				<h1 className="mt-2 text-2xl font-medium tracking-tight text-stone-900">{record.original_filename || record.filename}</h1>
+				<div>
+					<h1 className="mt-2 text-2xl font-medium tracking-tight text-stone-900">{heading}</h1>
+					{record.title?.trim() && (record.original_filename || record.filename) ? (
+						<p className="mt-1 text-xs text-stone-500">{record.original_filename || record.filename}</p>
+					) : null}
+				</div>
 				<div className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
 					<span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1.5">
 						<CalendarDays className="h-3.5 w-3.5" />
@@ -195,27 +307,83 @@ export function RecordDetail({ recordId: recordIdProp }: RecordDetailProps) {
 
 			<div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
 				<div className="space-y-6">
-					<section className="rounded-3xl border border-stone-200 bg-gradient-to-br from-white to-stone-100 p-5">
-						<div className="flex gap-2 items-center mb-2">
-							<div className="flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
-								<FileText className="h-4 w-4" />
-							</div>
-							<p className="text-sm font-medium">Resumo</p>
-						</div>
+					<SectionCard icon={FileText} title="Resumo" tone="br">
 						<p className="whitespace-pre-wrap text-sm leading-7 text-stone-700">{record.summary || 'Nenhum resumo foi gerado para esta gravação.'}</p>
-					</section>
+					</SectionCard>
 
-					<section className="rounded-3xl border border-stone-200 bg-gradient-to-tr from-white to-stone-100 p-5">
-						<div className="flex gap-2 items-center mb-2">
-							<div className="flex h-6 w-6 items-center justify-center rounded-md border border-stone-200 bg-stone-100 text-stone-500">
-								<MessageSquareText className="h-4 w-4" />
+					{decisions.length > 0 ? (
+						<SectionCard icon={Gavel} title="Decisões" tone="tr">
+							<div className="space-y-5">
+								{[
+									{ key: 'needs_discussion', label: 'Precisa de mais conversa', items: pendingDecisions },
+									{ key: 'aligned', label: 'Alinhada', items: alignedDecisions },
+								]
+									.filter((group) => group.items.length > 0)
+									.map((group) => (
+										<div key={group.key} className="space-y-2.5">
+											<p className={`text-xs font-semibold uppercase tracking-wide ${group.key === 'needs_discussion' ? 'text-amber-600' : 'text-emerald-600'}`}>{group.label}</p>
+											<ul className="space-y-2.5">
+												{group.items.map((decision, index) => (
+													<li key={`${group.key}-${index}`} className="rounded-2xl border border-stone-200 bg-white p-3.5">
+														<div className="flex items-start gap-2">
+															{group.key === 'needs_discussion' ? (
+																<Info className="mt-0.5 h-4 w-4 flex-none text-amber-500" />
+															) : (
+																<CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-emerald-500" />
+															)}
+															<div className="min-w-0">
+																<p className="text-sm font-medium text-stone-900">{decision.title}</p>
+																{decision.context ? <p className="mt-1 text-sm leading-6 text-stone-600">{decision.context}</p> : null}
+															</div>
+														</div>
+													</li>
+												))}
+											</ul>
+										</div>
+									))}
 							</div>
-							<p className="text-sm font-medium">Transcrição completa</p>
-						</div>
+						</SectionCard>
+					) : null}
+
+					{nextSteps.length > 0 ? (
+						<SectionCard icon={ListChecks} title="Próximas etapas" tone="br">
+							<ul className="space-y-3">
+								{nextSteps.map((step, index) => (
+									<li key={`step-${index}`} className="rounded-2xl border border-stone-200 bg-white p-3.5">
+										<div className="flex items-start gap-2">
+											<span className="mt-0.5 flex h-4 w-4 flex-none items-center justify-center rounded border border-stone-300 bg-stone-50 text-[10px] text-stone-400">✓</span>
+											<div className="min-w-0">
+												<p className="text-sm font-medium text-stone-900">
+													{step.people.length > 0 ? <span className="text-stone-500">[{step.people.map((person) => `@${person}`).join(', ')}] </span> : null}
+													{step.title}
+												</p>
+												{step.body ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-600">{step.body}</p> : null}
+											</div>
+										</div>
+									</li>
+								))}
+							</ul>
+						</SectionCard>
+					) : null}
+
+					{details.length > 0 ? (
+						<SectionCard icon={Info} title="Detalhes" tone="tl">
+							<div className="space-y-4">
+								{details.map((detail, index) => (
+									<div key={`detail-${index}`} className="rounded-2xl border border-stone-200 bg-white p-3.5">
+										<p className="text-sm font-semibold text-stone-900">{detail.topic}</p>
+										{detail.notes ? <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-600">{detail.notes}</p> : null}
+									</div>
+								))}
+							</div>
+						</SectionCard>
+					) : null}
+
+					<SectionCard icon={MessageSquareText} title="Transcrição completa" tone="tr">
 						<div className="max-h-[32rem] overflow-auto rounded-2xl border border-stone-200 bg-white p-4">
 							<p className="whitespace-pre-wrap text-sm leading-7 text-stone-700">{record.transcript || 'Nenhuma transcrição está disponível para esta gravação.'}</p>
 						</div>
-					</section>
+					</SectionCard>
 				</div>
 
 				<aside className="space-y-6">
@@ -308,14 +476,16 @@ export function RecordDetail({ recordId: recordIdProp }: RecordDetailProps) {
 						</div>
 
 						<div className="flex flex-wrap gap-2">
-							{Array.from(new Set(issueGroups.flatMap((issue) => issue.people))).map((person) => (
+							{Array.from(new Set([...issueGroups.flatMap((issue) => issue.people), ...nextSteps.flatMap((step) => step.people)])).map((person) => (
 								<span key={person} className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-700 ring-1 ring-stone-200">
 									{person}
 								</span>
 							))}
 						</div>
 
-						{issueGroups.flatMap((issue) => issue.people).length === 0 ? <p className="mt-3 text-sm text-stone-500">Nenhuma pessoa foi associada a esta gravação.</p> : null}
+						{issueGroups.flatMap((issue) => issue.people).length === 0 && nextSteps.flatMap((step) => step.people).length === 0 ? (
+							<p className="mt-3 text-sm text-stone-500">Nenhuma pessoa foi associada a esta gravação.</p>
+						) : null}
 					</section>
 				</aside>
 			</div>

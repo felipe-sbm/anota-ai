@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import React from "react"
 
+import "./styles/tailwind.generated.css"
 import "./styles/recorder.scss"
 const Logo = new URL("./assets/logo.png", import.meta.url).toString()
 

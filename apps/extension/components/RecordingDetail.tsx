@@ -17,6 +17,7 @@ type Recording = {
   file_id: string
   filename: string
   original_filename: string
+  title?: string | null
   created_at: string
   status: string
   transcript: string | null
@@ -368,7 +369,7 @@ export default function RecordingDetail({ record, onBack }: Props) {
         <div className="detail-text">
           <div className="detail-subheader">
             <h2 className="detail-title">
-              {detail.original_filename || detail.filename}
+              {detail.title || detail.original_filename || detail.filename}
             </h2>
             <span className={"detail-status-badge " + statusInfo.className}>
               {statusInfo.label}
